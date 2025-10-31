@@ -1,0 +1,10 @@
+// lib/api.ts
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+export async function fetchFromAPI<T>(endpoint: string): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${endpoint}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${endpoint}`);
+  }
+  return res.json();
+}
