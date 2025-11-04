@@ -1,30 +1,10 @@
 // src/app/page.tsx
-import { fetchFromAPI } from '@/lib/api';
+import { redirect } from 'next/navigation';
 
-type Stats = {
-  totalUsers: number;
-  totalProducts: number;
-};
-
-export default async function DashboardPage() {
-  // const stats: Stats = await fetchFromAPI('/api'); // ← Replace with your actual FastAPI endpoint
-
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="text-lg font-semibold">Total Users</h2>
-          {/* <p className="text-3xl">{stats.totalUsers}</p> */}
-        </div>
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="text-lg font-semibold">Total Products</h2>
-          {/* <p className="text-3xl">{stats.totalProducts}</p> */}
-        </div>
-      </div>
-    </div>
-  );
+export default function Home() {
+  redirect('/login');
 }
+
 // import Image from "next/image";
 
 // export default function Home() {
