@@ -1,5 +1,8 @@
 // src/app/layout.tsx
-import './globals.css'; // You can create this later or use Tailwind directly
+import './globals.css';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
@@ -8,24 +11,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <div className="flex min-h-screen bg-gray-50">
-          {/* Sidebar */}
-          <aside className="w-64 bg-white shadow-md p-4">
-            <h1 className="text-xl font-bold mb-6">Admin Panel</h1>
-            <nav>
-              <ul className="space-y-2">
-                <li><a href="/" className="block p-2 hover:bg-gray-100 rounded">Dashboard</a></li>
-                <li><a href="/users" className="block p-2 hover:bg-gray-100 rounded">Users</a></li>
-              </ul>
-            </nav>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1 p-6">
-            {children}
-          </main>
-        </div>
+      <body className={inter.className}>
+        {children}
       </body>
     </html>
   );
@@ -34,6 +21,7 @@ export default function RootLayout({
 // import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 // import "./globals.css";
+// import Navbar from './components/Navbar';
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
