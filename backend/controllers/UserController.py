@@ -5,6 +5,33 @@ from database import engine
 import uuid
 import bcrypt
 
+def get_user_by_username_or_email(identifier: str):
+    """
+    Fetch user by username OR email.
+    """
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(
+                text('''
+                    SELECT uid, username, email, password 
+                    FROM public."user" 
+                    WHERE username = :identifier OR email = :identifier
+                '''),
+                {"identifier": identifier}
+            )
+            row = result.fetchone()
+            if row:
+                return {
+                    "uid": row.uid,
+                    "username": row.username,
+                    "email": row.email,
+                    "hashed_password": row.password
+                }
+            else:
+                return None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user: {str(e)}")
+        
 def get_all_users(page: int = 1, limit: int = 10, search: str = None):
     try:
         offset = (page - 1) * limit

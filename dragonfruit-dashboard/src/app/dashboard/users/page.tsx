@@ -147,12 +147,12 @@ export default function UsersPage() {
             <p className="text-sm text-gray-500 mt-1">Track and manage your system users.</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center">
+            {/* <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center">
               Export
               <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17h18V7H3v10z" />
               </svg>
-            </button>
+            </button> */}
             <a
               href="/dashboard/users/form"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center justify-center"
