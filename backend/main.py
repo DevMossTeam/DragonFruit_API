@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 from sqlalchemy import text  
 from routes.user import router as users_router
-from auth.login import router as auth_router  # ← This is now /auth/login
-from auth.api_login import router as api_auth_router  # ← This is now /api/auth/login
+from auth.login import router as auth_router 
+from auth.api_login import router as api_auth_router  
 
 app = FastAPI()
 
@@ -40,8 +40,9 @@ async def health_check():
         raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
 
 app.include_router(users_router, prefix="/users", tags=["users"])
-app.include_router(auth_router, prefix="/auth", tags=["auth"])         # → /auth/login
-app.include_router(api_auth_router, prefix="/api/auth", tags=["auth"]) # → /api/auth/login
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(api_auth_router, prefix="/api/auth", tags=["auth"])
+
 
 # @app.get("/users")
 # async def get_all_users():
