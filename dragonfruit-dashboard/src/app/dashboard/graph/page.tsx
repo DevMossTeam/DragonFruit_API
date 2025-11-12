@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { fetchFromAPI } from '@/lib/api';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWifi, faEye, faBrain } from '@fortawesome/free-solid-svg-icons';
 
 // Dynamic import to avoid SSR issues with ApexCharts
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -304,8 +302,7 @@ export default function GraphPage() {
       {/* ==================== PART 1: IoT HEALTH STATISTICS ==================== */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <FontAwesomeIcon icon={faWifi} className="text-2xl text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-800">IoT Health Statistics</h2>
+          <h2 className="text-2xl font-bold text-gray-800">🌐 IoT Health Statistics</h2>
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
             Device Monitoring
           </span>
@@ -355,8 +352,7 @@ export default function GraphPage() {
       {/* ==================== PART 2: COMPUTER VISION STATISTICS ==================== */}
       <section className="space-y-4 pt-8 border-t-2 border-gray-200">
         <div className="flex items-center gap-2">
-          <FontAwesomeIcon icon={faEye} className="text-2xl text-purple-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Computer Vision Statistics</h2>
+          <h2 className="text-2xl font-bold text-gray-800">👁️ Computer Vision Statistics</h2>
           <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-1 rounded-full">
             Image Analysis
           </span>
@@ -406,8 +402,7 @@ export default function GraphPage() {
       {/* ==================== PART 3: MACHINE LEARNING FUZZY STATISTICS ==================== */}
       <section className="space-y-4 pt-8 border-t-2 border-gray-200">
         <div className="flex items-center gap-2">
-          <FontAwesomeIcon icon={faBrain} className="text-2xl text-orange-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Machine Learning Fuzzy Logic Statistics</h2>
+          <h2 className="text-2xl font-bold text-gray-800">🤖 Machine Learning Fuzzy Logic Statistics</h2>
           <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
             AI Classification
           </span>

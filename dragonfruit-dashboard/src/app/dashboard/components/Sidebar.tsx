@@ -2,13 +2,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faChartLine, faUsers, faCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTachometerAlt, faChartLine, faUsers } from '@fortawesome/free-solid-svg-icons';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     // Listen for custom events from navbar
@@ -20,18 +18,10 @@ export default function Sidebar() {
     return () => window.removeEventListener('toggleSidebar', handleToggle);
   }, []);
 
-  const handleLogout = () => {
-    // Clear user from localStorage
-    localStorage.removeItem('user');
-    // Redirect to login
-    router.push('/login');
-  };
-
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: faTachometerAlt },
     { href: '/dashboard/graph', label: 'Analytics', icon: faChartLine },
     { href: '/dashboard/users', label: 'Users', icon: faUsers },
-    { href: '/dashboard/settings', label: 'Settings', icon: faCog },
   ];
 
   return (
@@ -56,20 +46,6 @@ export default function Sidebar() {
             ))}
           </ul>
         </div>
-
-        {/* Logout Button */}
-        <div className="border-t border-gray-200 px-3 py-4">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center p-2 text-gray-900 rounded-lg hover:bg-red-50 transition-colors duration-150 group"
-          >
-            <FontAwesomeIcon
-              icon={faSignOutAlt}
-              className="w-5 h-5 text-gray-500 group-hover:text-red-600 transition-colors"
-            />
-            <span className="ms-3 group-hover:text-red-600 transition-colors">Logout</span>
-          </button>
-        </div>
       </aside>
 
       {/* Mobile Sidebar - Toggleable */}
@@ -85,8 +61,8 @@ export default function Sidebar() {
           isOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'
         }`}
       >
-        <div className="px-3 py-4 overflow-y-auto h-full flex flex-col">
-          <ul className="space-y-2 font-medium flex-1">
+        <div className="px-3 py-4 overflow-y-auto h-full">
+          <ul className="space-y-2 font-medium">
             {menuItems.map((item) => (
               <li key={item.href}>
                 <a
@@ -103,23 +79,6 @@ export default function Sidebar() {
               </li>
             ))}
           </ul>
-
-          {/* Logout Button */}
-          <div className="border-t border-gray-200 pt-4">
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                handleLogout();
-              }}
-              className="w-full flex items-center p-2 text-gray-900 rounded-lg hover:bg-red-50 transition-colors duration-150 group"
-            >
-              <FontAwesomeIcon
-                icon={faSignOutAlt}
-                className="w-5 h-5 text-gray-500 group-hover:text-red-600 transition-colors"
-              />
-              <span className="ms-3 group-hover:text-red-600 transition-colors">Logout</span>
-            </button>
-          </div>
         </div>
       </aside>
 
