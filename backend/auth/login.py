@@ -2,33 +2,31 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from models.User import UserInDB
-from controllers.UserController import get_user_by_username
+from controllers.UserController import get_user_by_username_or_email 
 from auth.security import verify_password
-from auth.session import create_session, get_session, delete_session
+from auth.session import create_session
 
-router = APIRouter()
+# ✅ No prefix here — will be set in main.py
+router = APIRouter(tags=["auth"])
 
 @router.post("/login")
 async def login(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
-    # Fetch user
-    user = get_user_by_username(form_data.username)
+    user = get_user_by_username_or_email(form_data.username)
     if not user or not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Create session
     session_id = create_session(user["uid"])
     
-    # Set secure cookie
     response.set_cookie(
         key="session_id",
         value=session_id,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=False,
         samesite="lax",
-        max_age=3600  # 1 hour
+        max_age=3600
     )
     
     return {"message": "Logged in successfully"}
@@ -37,6 +35,7 @@ async def login(
 async def logout(request: Request, response: Response):
     session_id = request.cookies.get("session_id")
     if session_id:
+        from auth.session import delete_session
         delete_session(session_id)
     response.delete_cookie("session_id")
     return {"message": "Logged out"}
@@ -51,7 +50,6 @@ async def get_current_user(request: Request):
     if not session:
         raise HTTPException(status_code=401, detail="Session expired")
     
-    # Fetch user by uid (you can cache this)
     from controllers.UserController import get_user_by_uid
     user = get_user_by_uid(session["user_id"])
     return user

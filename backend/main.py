@@ -1,14 +1,16 @@
-# main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 from sqlalchemy import text  
 from routes.user import router as users_router
+from auth.login import router as auth_router 
+from auth.api_login import router as api_auth_router  
 
 app = FastAPI()
 
 origins = [
     "http://localhost:8080",
+    "http://localhost:3000"
 ]
 
 app.add_middleware(
@@ -19,18 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Root endpoint
 @app.get("/")
 async def root():
     return {"message": "Dragon Fruit Api"}
 
 @app.get("/health")
 async def health_check():
-    """Test database connection endpoint"""
     try:
         with engine.connect() as conn:
-            # Use text() for raw SQL in newer SQLAlchemy versions
             result = conn.execute(text("SELECT version();"))
             version = result.scalar()
         return {
@@ -39,12 +37,12 @@ async def health_check():
             "version": version
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Database connection failed: {str(e)}"
-        )
-    
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+
 app.include_router(users_router, prefix="/users", tags=["users"])
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(api_auth_router, prefix="/api/auth", tags=["auth"])
+
 
 # @app.get("/users")
 # async def get_all_users():
