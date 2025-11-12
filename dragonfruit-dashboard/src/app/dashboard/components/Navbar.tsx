@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDragon, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -10,6 +10,21 @@ interface NavbarProps {
 
 export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
+
+  // Load user email from localStorage on mount
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserEmail(user.email || 'User');
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+        setUserEmail('User');
+      }
+    }
+  }, []);
 
   const handleToggle = () => {
     setSidebarOpen(!sidebarOpen);
@@ -51,7 +66,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
             {/* User Email */}
             <div className="flex items-center">
-              <p className="text-sm font-medium text-gray-300">dummy@gmail.com</p>
+              <p className="text-sm font-medium text-gray-300">{userEmail}</p>
             </div>
           </div>
         </div>

@@ -4,12 +4,16 @@
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import { useState } from 'react';
+import { useProtectedRoute } from '@/lib/useProtectedRoute';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Protect this route - redirect to login if not authenticated
+  useProtectedRoute();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleToggleSidebar = () => {
