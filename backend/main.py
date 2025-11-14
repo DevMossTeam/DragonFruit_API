@@ -32,17 +32,22 @@ async def startup_event():
     print("🚀 Starting MQTT client...")
     mqtt.init_mqtt()
 
+from pydantic import BaseModel
+
+class GradeRequest(BaseModel):
+    grade: str
+
+@app.post("/set-grade")
+async def set_grade(req: GradeRequest):
+    mqtt.publish_grade(req.grade)
+    return {"message": f"Grade set to '{req.grade}'", "grade": req.grade}
+
 @app.post("/test-send-grade")
 async def test_send_grade():
-    import json
-    current_grade = mqtt.dragonFruitGrade
-
+    current_grade = mqtt.mqttGrade
     if current_grade is None:
-        return {"error": "No grade available. Please send weight data first via MQTT."}
-
-    payload = {"grade": current_grade}
-    print(f"📤 Publishing to {mqtt.GRADE_TOPIC}: {json.dumps(payload)}")
-    mqtt.client.publish(mqtt.GRADE_TOPIC, json.dumps(payload))
+        return {"error": "No grade available. Please use /set-grade first."}
+    mqtt.publish_grade(current_grade)
     return {
         "message": f"Current grade '{current_grade}' republished to {mqtt.GRADE_TOPIC}",
         "grade": current_grade
@@ -50,11 +55,11 @@ async def test_send_grade():
 
 @app.get("/current-grade")
 async def current_grade():
-    return {"current_grade": mqtt.dragonFruitGrade}
+    return {"current_grade": mqtt.mqttGrade}
 
 @app.get("/current-weight")
 async def current_weight():
-    return {"current_weight": mqtt.dragonFruitWeight}
+    return {"current_weight": mqtt.mqttWeight}
 
 # Health & root
 @app.get("/")

@@ -11,48 +11,37 @@ MQTT_USER = os.getenv("MQTT_USER", "MQTTDG")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "Wasd12345")
 
 # MQTT Topics
-GRADE_TOPIC = "iot/machine/grade"
 WEIGHT_TOPIC = "iot/machine/weight"
+GRADE_TOPIC = "iot/machine/grade"
 
 # Global MQTT client
 client = mqtt.Client(client_id="fastapi-backend", protocol=mqtt.MQTTv311)
 
-# Store latest grade in memory
-dragonFruitGrade = None
-dragonFruitWeight = None
-
-# def determine_grade(weight: float) -> str:
-#     if weight < 10:
-#         return "C"
-#     elif weight < 50:
-#         return "B"
-#     else:
-#         return "A"
+# Store latest data in memory
+mqttGrade = None
+mqttWeight = None
 
 def on_message(client, userdata, msg):
-    global dragonFruitGrade, dragonFruitWeight  
+    global mqttWeight
     try:
         payload = msg.payload.decode().strip()
         print(f"📥 MQTT Received on {msg.topic}: {payload}")
 
         if msg.topic == WEIGHT_TOPIC:
-            # Try to parse as raw float first
+            # Try raw float first
             try:
                 bobot = float(payload)
             except ValueError:
-                # If it's not a raw number, try JSON
+                # Try JSON format
                 data = json.loads(payload)
                 if isinstance(data, dict):
                     bobot = float(data["bobot"])
                 else:
-                    raise ValueError("Unexpected payload format")
+                    bobot = float(data)  # in case it's a JSON number
 
-            dragonFruitWeight = bobot
-            grade = determine_grade(bobot)
-            dragonFruitGrade = grade
-
-            client.publish(GRADE_TOPIC, json.dumps({"grade": grade}))
-            print(f"📤 Published grade '{grade}' to {GRADE_TOPIC}")
+            mqttWeight = bobot
+            print(f"💾 Stored weight: {mqttWeight}")
+            # ⚠️ TIDAK ADA PERHITUNGAN GRADE → TIDAK ADA PUBLISH OTOMATIS
     except Exception as e:
         print(f"⚠️ Error in MQTT message handler: {e}")
 
@@ -79,12 +68,20 @@ def init_mqtt():
     thread.start()
     return client
 
-# Debugging exports
+# Helper: publish grade manually (used by /test-send-grade)
+def publish_grade(grade: str):
+    global mqttGrade
+    mqttGrade = grade
+    client.publish(GRADE_TOPIC, json.dumps({"grade": grade}), qos=1, retain=True)
+    print(f"📤 Published grade '{grade}' to {GRADE_TOPIC} (retained)")
+
+# Exports
 __all__ = [
-    "init_mqtt", 
-    "client", 
-    "GRADE_TOPIC", 
+    "init_mqtt",
+    "client",
+    "GRADE_TOPIC",
     "WEIGHT_TOPIC",
-    "dragonFruitGrade", 
-    "dragonFruitWeight" 
+    "mqttGrade",
+    "mqttWeight",
+    "publish_grade"
 ]
