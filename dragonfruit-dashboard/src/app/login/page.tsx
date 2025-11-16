@@ -1,16 +1,12 @@
 'use client';
 
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDragon, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -18,47 +14,17 @@ export default function Login() {
   
   const router = useRouter();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for session
-        body: JSON.stringify({
-          username_or_email: formData.email,
-          password: formData.password
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-
-      const data = await response.json();
-      
-      // Store user info in localStorage for reference
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-      
-      // Redirect to dashboard after successful login
-      router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
-      console.error('Login error:', err);
-    } finally {
-      setLoading(false);
-    }
+    console.log('Login form submitted:', formData);
+    
+    // Simulate successful login
+    // In real app, you'd validate credentials with API
+    localStorage.setItem('token', 'fake-jwt-token');
+    router.push('/dashboard'); // Redirect to dashboard after login
   };
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -80,28 +46,56 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Sign In</h1>
           <p className="text-gray-500 mb-8">Enter your email and password to sign in!</p>
 
-          {/* Error message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm font-medium">{error}</p>
-            </div>
-          )}
+          {/* Divider */}
+          {/* <div className="flex items-center mb-6">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="px-4 text-gray-500 text-sm">Or</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div> */}
 
-          <form onSubmit={handleSubmit}>
-            {/* Email field */}
-            <div className="mb-6 text-black">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email<span className="text-red-500">*</span></label>
+          {/* Email field */}
+          <div className="mb-6 text-black">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email<span className="text-red-500">*</span></label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="info@gmail.com"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            />
+          </div>
+
+          {/* Password field */}
+          <div className="mb-6 text-black">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password<span className="text-red-500">*</span></label>
+            <div className="relative">
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
                 onChange={handleChange}
-                placeholder="info@gmail.com"
-                required
-                disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="Enter your password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 012.557-5.372A9.97 9.97 0 015.057 5.372a9.97 9.97 0 012.557-5.372A10.05 10.05 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.05 10.05 0 01-5.372 5.372z" />
+                  </svg>
+                )}
+              </button>
             </div>
+          </div>
 
             {/* Password field */}
             <div className="mb-6 text-black">
@@ -147,35 +141,39 @@ export default function Login() {
               <a href="#" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                 Forgot password?
               </a>
+          {/* Remember me and forgot password */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                Keep me logged in
+              </label>
             </div>
+            <a href="#" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              Forgot password?
+            </a>
+          </div>
 
-            {/* Sign in button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </button>
+          {/* Sign in button */}
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Sign In
+          </button>
 
-            {/* Sign up link */}
-            <p className="mt-6 text-sm text-gray-600 text-center">
-              Don't have an account?{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
-                Sign Up
-              </a>
-            </p>
-          </form>
+          {/* Sign up link */}
+          <p className="mt-6 text-sm text-gray-600 text-center">
+            Don't have an account?{' '}
+            <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+              Sign Up
+            </a>
+          </p>
         </div>
       </div>
 
