@@ -1,7 +1,10 @@
-import pandas as pd
+from skfuzzy import control as ctrl
 
-def fuzzy_grade(area_norm, weight_norm, texture_norm, hue_norm):
-    # panggil kode fuzzy kamu di sini 
-    # atau import langsung controller fuzzy dari file grading
-    from fuzzy_grading import compute_single_fuzzy  # kamu buat fungsi ini
-    return compute_single_fuzzy(area_norm, weight_norm, texture_norm, hue_norm)
+_controller = None
+
+def get_fuzzy_sim():
+    global _controller
+    if _controller is None:
+        from .rules import build_fuzzy_controller
+        _controller = ctrl.ControlSystem(build_fuzzy_controller().rules)
+    return ctrl.ControlSystemSimulation(_controller)
