@@ -97,50 +97,6 @@ export default function Login() {
             </div>
           </div>
 
-            {/* Password field */}
-            <div className="mb-6 text-black">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password<span className="text-red-500">*</span></label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  required
-                  disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                >
-                  <FontAwesomeIcon
-                    icon={showPassword ? faEyeSlash : faEye}
-                    className="w-5 h-5"
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Remember me and forgot password */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                  disabled={loading}
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Keep me logged in
-                </label>
-              </div>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                Forgot password?
-              </a>
           {/* Remember me and forgot password */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
