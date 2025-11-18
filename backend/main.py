@@ -31,13 +31,37 @@ app.add_middleware(
 )
 
 # ==========================
-# MQTT STARTUP
+# MQTT STARTUP & Routes
 # ==========================
 @app.on_event("startup")
 async def startup_event():
     print("🚀 Initializing MQTT client...")
     init_mqtt()
 
+
+@app.post("/set-grade")
+async def set_grade(req: GradeRequest):
+    mqtt.publish_grade(req.grade)
+    return {"message": f"Grade set to '{req.grade}'", "grade": req.grade}
+
+@app.post("/test-send-grade")
+async def test_send_grade():
+    current_grade = mqtt.mqttGrade
+    if current_grade is None:
+        return {"error": "No grade available. Please use /set-grade first."}
+    mqtt.publish_grade(current_grade)
+    return {
+        "message": f"Current grade '{current_grade}' republished to {mqtt.GRADE_TOPIC}",
+        "grade": current_grade
+    }
+
+@app.get("/current-grade")
+async def current_grade():
+    return {"current_grade": mqtt.mqttGrade}
+
+@app.get("/current-weight")
+async def current_weight():
+    return {"current_weight": mqtt.mqttWeight}
 
 # ==========================
 # ROUTERS
