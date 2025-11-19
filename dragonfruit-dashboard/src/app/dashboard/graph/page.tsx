@@ -14,27 +14,48 @@ interface StatisticData {
   status: 'good' | 'warning' | 'danger';
 }
 
+interface IoTDailyData {
+  date: string;
+  uptime: number;
+  temp: number;
+  humidity: number;
+}
+
+interface ComputerVisionDailyData {
+  date: string;
+  accuracy: number;
+  processingTime: number;
+  detectionRate: number;
+}
+
+interface MachineLearningDailyData {
+  date: string;
+  fuzzyAccuracy: number;
+  precision: number;
+  recall: number;
+}
+
 interface SectionData {
-  iotHealth: {
-    uptime: StatisticData;
-    temperature: StatisticData;
-    humidity: StatisticData;
-    signalStrength: StatisticData;
-    dailyData: any[];
-  };
+  // iotHealth: {
+  //   uptime: StatisticData;
+  //   temperature: StatisticData;
+  //   humidity: StatisticData;
+  //   signalStrength: StatisticData;
+  //   dailyData: IoTDailyData[];
+  // };
   computerVision: {
     accuracy: StatisticData;
     processingTime: StatisticData;
     detectionRate: StatisticData;
     falsePositives: StatisticData;
-    dailyData: any[];
+    dailyData: ComputerVisionDailyData[];
   };
   machineLearning: {
     fuzzyAccuracy: StatisticData;
     precision: StatisticData;
     recall: StatisticData;
     f1Score: StatisticData;
-    dailyData: any[];
+    dailyData: MachineLearningDailyData[];
   };
 }
 
@@ -48,21 +69,21 @@ export default function GraphPage() {
       try {
         // Mock data - replace with actual API calls
         const mockData: SectionData = {
-          iotHealth: {
-            uptime: { label: 'Uptime', value: 99.8, unit: '%', status: 'good' },
-            temperature: { label: 'Temperature', value: 28.5, unit: '°C', status: 'good' },
-            humidity: { label: 'Humidity', value: 65, unit: '%', status: 'good' },
-            signalStrength: { label: 'Signal Strength', value: 92, unit: 'dBm', status: 'good' },
-            dailyData: [
-              { date: 'Mon', uptime: 99.8, temp: 28.2, humidity: 64 },
-              { date: 'Tue', uptime: 99.9, temp: 28.5, humidity: 65 },
-              { date: 'Wed', uptime: 99.7, temp: 27.8, humidity: 63 },
-              { date: 'Thu', uptime: 100, temp: 29.1, humidity: 66 },
-              { date: 'Fri', uptime: 99.6, temp: 28.9, humidity: 67 },
-              { date: 'Sat', uptime: 99.9, temp: 28.3, humidity: 64 },
-              { date: 'Sun', uptime: 99.8, temp: 28.7, humidity: 65 },
-            ],
-          },
+          // iotHealth: {
+          //   uptime: { label: 'Uptime', value: 99.8, unit: '%', status: 'good' },
+          //   temperature: { label: 'Temperature', value: 28.5, unit: '°C', status: 'good' },
+          //   humidity: { label: 'Humidity', value: 65, unit: '%', status: 'good' },
+          //   signalStrength: { label: 'Signal Strength', value: 92, unit: 'dBm', status: 'good' },
+          //   dailyData: [
+          //     { date: 'Mon', uptime: 99.8, temp: 28.2, humidity: 64 },
+          //     { date: 'Tue', uptime: 99.9, temp: 28.5, humidity: 65 },
+          //     { date: 'Wed', uptime: 99.7, temp: 27.8, humidity: 63 },
+          //     { date: 'Thu', uptime: 100, temp: 29.1, humidity: 66 },
+          //     { date: 'Fri', uptime: 99.6, temp: 28.9, humidity: 67 },
+          //     { date: 'Sat', uptime: 99.9, temp: 28.3, humidity: 64 },
+          //     { date: 'Sun', uptime: 99.8, temp: 28.7, humidity: 65 },
+          //   ],
+          // },
           computerVision: {
             accuracy: { label: 'Detection Accuracy', value: 96.5, unit: '%', status: 'good' },
             processingTime: { label: 'Avg Processing Time', value: 245, unit: 'ms', status: 'good' },
@@ -153,37 +174,37 @@ export default function GraphPage() {
   };
 
   // IoT Health Charts
-  const iotLineChartOptions = {
-    chart: {
-      type: 'line' as const,
-      toolbar: { show: true },
-    },
-    colors: ['#3b82f6', '#ef4444', '#10b981'],
-    xaxis: {
-      categories: sectionData.iotHealth.dailyData.map((d) => d.date),
-    },
-    yaxis: {
-      title: { text: 'Values' },
-    },
-    stroke: { curve: 'smooth' as const, width: 3 },
-    markers: { size: 5 },
-    legend: { position: 'top' as const },
-  };
+  // const iotLineChartOptions = {
+  //   chart: {
+  //     type: 'line' as const,
+  //     toolbar: { show: true },
+  //   },
+  //   colors: ['#3b82f6', '#ef4444', '#10b981'],
+  //   xaxis: {
+  //     categories: sectionData.iotHealth.dailyData.map((d) => d.date),
+  //   },
+  //   yaxis: {
+  //     title: { text: 'Values' },
+  //   },
+  //   stroke: { curve: 'smooth' as const, width: 3 },
+  //   markers: { size: 5 },
+  //   legend: { position: 'top' as const },
+  // };
 
-  const iotLineChartSeries = [
-    {
-      name: 'Uptime (%)',
-      data: sectionData.iotHealth.dailyData.map((d) => d.uptime),
-    },
-    {
-      name: 'Temperature (°C)',
-      data: sectionData.iotHealth.dailyData.map((d) => d.temp),
-    },
-    {
-      name: 'Humidity (%)',
-      data: sectionData.iotHealth.dailyData.map((d) => d.humidity),
-    },
-  ];
+  // const iotLineChartSeries = [
+  //   {
+  //     name: 'Uptime (%)',
+  //     data: sectionData.iotHealth.dailyData.map((d) => d.uptime),
+  //   },
+  //   {
+  //     name: 'Temperature (°C)',
+  //     data: sectionData.iotHealth.dailyData.map((d) => d.temp),
+  //   },
+  //   {
+  //     name: 'Humidity (%)',
+  //     data: sectionData.iotHealth.dailyData.map((d) => d.humidity),
+  //   },
+  // ];
 
   // Computer Vision Charts
   const cvLineChartOptions = {
@@ -295,20 +316,20 @@ export default function GraphPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-800">System Analytics & Monitoring</h1>
         <p className="mt-1 text-gray-600">
-          Real-time monitoring of IoT Health, Computer Vision, and Machine Learning Fuzzy Logic systems
+          Real-time monitoring of Computer Vision and Machine Learning Fuzzy Logic systems
         </p>
       </div>
 
-      {/* ==================== PART 1: IoT HEALTH STATISTICS ==================== */}
-      <section className="space-y-4">
+      ==================== PART 1: IoT HEALTH STATISTICS ====================
+      {/* <section className="space-y-4">
         <div className="flex items-center gap-2">
           <h2 className="text-2xl font-bold text-gray-800">🌐 IoT Health Statistics</h2>
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
             Device Monitoring
           </span>
-        </div>
+        </div> */}
 
-        {/* IoT Health Metrics */}
+        {/* IoT Health Metrics
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             sectionData.iotHealth.uptime,
@@ -333,9 +354,9 @@ export default function GraphPage() {
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
 
-        {/* IoT Health Chart */}
+        {/* IoT Health Chart
         <div className="bg-white rounded-xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">7-Day Performance Trend</h3>
           <div className="h-80">
@@ -347,7 +368,7 @@ export default function GraphPage() {
             />
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ==================== PART 2: COMPUTER VISION STATISTICS ==================== */}
       <section className="space-y-4 pt-8 border-t-2 border-gray-200">
@@ -503,7 +524,7 @@ export default function GraphPage() {
         </div>
       </section>
 
-      {/* Summary Section */}
+      {/* Summary Section
       <section className="pt-8 border-t-2 border-gray-200">
         <div className="bg-linear-to-r from-blue-50 to-purple-50 rounded-xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">System Health Summary</h3>
@@ -525,7 +546,7 @@ export default function GraphPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }
