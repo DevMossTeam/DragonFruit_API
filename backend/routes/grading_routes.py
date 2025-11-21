@@ -16,7 +16,7 @@ router = APIRouter()
 # ============================================
 # PERBAIKAN PATH CSV (gunakan path absolut)
 # ============================================
-CSV_PATH = r"E:\DragonEye\dataset\features.csv"
+CSV_PATH = r"/Users/sartriaardianthauno/Desktop/project semster 5/DragonFruit_Grading/dataset/features.csv"
 
 if not os.path.exists(CSV_PATH):
     raise FileNotFoundError(f"Dataset CSV tidak ditemukan di: {CSV_PATH}")

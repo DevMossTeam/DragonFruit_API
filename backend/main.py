@@ -2,9 +2,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from pydantic import BaseModel
 
 from core.database import engine
-from core.mqtt import init_mqtt
+import core.mqtt as mqtt  # ← IMPORT THE FULL MODULE
 
 # Routers
 from routes.grading_routes import router as grading_router
@@ -31,12 +32,19 @@ app.add_middleware(
 )
 
 # ==========================
-# MQTT STARTUP & Routes
+# MQTT STARTUP
 # ==========================
 @app.on_event("startup")
 async def startup_event():
     print("🚀 Initializing MQTT client...")
-    init_mqtt()
+    mqtt.init_mqtt()  # This is fine since init_mqtt is in the module
+
+
+# ==========================
+# MQTT Routes (using full mqtt module)
+# ==========================
+class GradeRequest(BaseModel):
+    grade: str
 
 
 @app.post("/set-grade")
@@ -80,7 +88,7 @@ async def root():
 
 
 # ==========================
-# HEALTH CHECK (SQLAlchemy 2.0 FIX)
+# HEALTH CHECK
 # ==========================
 @app.get("/health")
 async def health():
@@ -88,11 +96,9 @@ async def health():
         with engine.connect() as conn:
             result = conn.execute(text("SELECT sqlite_version();"))
             version = result.fetchone()[0]
-
         return {
             "status": "ok",
             "database": f"SQLite {version}"
         }
-
     except Exception as e:
         return {"status": "error", "detail": str(e)}
