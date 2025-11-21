@@ -15,4 +15,8 @@ scikit-fuzzy>=0.4.2
 loguru>=0.7.0
 paho-mqtt>=1.6.0
 pandas>=2.0.0
+<<<<<<< HEAD
 scikit-image>=0.22.0
+=======
+scikit-image>=0.22.0
+>>>>>>> 4de6c678d12f94a843087e90bebc62bf8ec1823c

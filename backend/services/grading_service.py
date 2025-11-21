@@ -11,8 +11,13 @@ from .pcv.feature_extract import extract_features
 from .pcv.normalization import normalize_pct
 from .fuzzy.mamdani import get_fuzzy_sim
 
+# MQTT publisher
+from services.mqtt_service import mqtt_publish
 
-# grade by weight
+
+# =========================================================
+# Grade berdasarkan berat fisik
+# =========================================================
 def grade_by_weight(weight_g):
     if weight_g >= 350:
         return "A"
@@ -21,6 +26,9 @@ def grade_by_weight(weight_g):
     return "C"
 
 
+# =========================================================
+# Label fuzzy dari skor fuzzy
+# =========================================================
 def fuzzy_grade_label(score):
     if score >= 65:
         return "good"
@@ -28,11 +36,26 @@ def fuzzy_grade_label(score):
         return "defect"
     return "rotten"
 
+# =========================================================
+# Wrapper lama untuk kompatibilitas MQTT
+# =========================================================
+def process_grading(grade: str):
+    """
+    Wrapper untuk kompatibilitas dengan core/mqtt.py.
+    MQTT hanya membutuhkan trigger proses grading,
+    bukan grading lengkap berbasis citra.
+    """
+    print(f"[grading_service] Received grade: {grade}")
+    return {"grade": grade}
 
+
+# =========================================================
+# Proses utama grading
+# =========================================================
 def process_image(image_np, reference_df, filename: str, db: Session):
     """
     image_np: numpy array BGR
-    reference_df: dataset features.csv untuk normalisasi percentile
+    reference_df: dataframe features.csv untuk normalisasi percentile
     db: database session
     """
 
@@ -51,7 +74,7 @@ def process_image(image_np, reference_df, filename: str, db: Session):
     tex_norm = normalize_pct(tex_score, reference_df["texture_score"])
     hue_norm = normalize_pct(hue_mean, reference_df["hue_mean"])
 
-    # 5. Fuzzy
+    # 5. Fuzzy inference
     sim = get_fuzzy_sim()
     sim.input["ukuran"] = area_norm
     sim.input["berat"] = weight_norm
@@ -95,8 +118,8 @@ def process_image(image_np, reference_df, filename: str, db: Session):
     db.commit()
     db.refresh(db_record)
 
-    # 9. Return ke API
-    return {
+    # 9. Buat data hasil untuk API
+    result = {
         "id": db_record.id,
         "filename": filename,
 
@@ -118,3 +141,14 @@ def process_image(image_np, reference_df, filename: str, db: Session):
         "grade_by_weight": weight_label,
         "final_grade": final_grade
     }
+
+    # =========================================================
+    # 10. Publish ke MQTT (HiveMQ atau Mosquitto)
+    # =========================================================
+    try:
+        mqtt_publish("grading/result", result)
+    except Exception as e:
+        print("MQTT publish error:", e)
+
+    # 11. Return ke API
+    return result
