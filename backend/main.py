@@ -1,27 +1,21 @@
 # backend/main.py
-from fastapi import FastAPI, Request, HTTPException
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from pydantic import BaseModel
-import re
 
 from core.database import engine
-import core.mqtt as mqtt
+from core.mqtt import init_mqtt, publish_grade, mqttGrade, mqttWeight, GRADE_TOPIC
 
-# Import session logic directly (since you want everything in main.py)
-from auth.session import get_session
-from controllers.UserController import get_user_by_uid
+# Request model
+from pydantic import BaseModel
 
-# Routers
-from routes.grading_routes import router as grading_router
-from routes.device_routes import router as device_router
-from routes.camera_routes import router as camera_router
+class GradeRequest(BaseModel):
+    grade: str
 
-from routes.user import router as user_router
-from routes.auth import router as auth_router
 
 app = FastAPI(title="Dragon Fruit Grading API")
+
 
 # ==========================
 # CORS
@@ -40,47 +34,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================
-# AUTH MIDDLEWARE (all in main.py)
-# ==========================
-# PUBLIC_PATHS = [
-#     r"^/$",
-#     r"^/health$",
-#     r"^/api/auth/.*",  # All auth routes are public
-# ]
-
-# @app.middleware("http")
-# async def auth_middleware(request: Request, call_next):
-#     path = request.url.path
-
-#     # Check if path is public
-#     is_public = any(re.match(pattern, path) for pattern in PUBLIC_PATHS)
-    
-#     if not is_public:
-#         # Verify session
-#         session_id = request.cookies.get("session_id")
-#         if not session_id:
-#             return JSONResponse(
-#                 status_code=401,
-#                 content={"detail": "Not authenticated"}
-#             )
-        
-#         session = get_session(session_id)
-#         if not session:
-#             return JSONResponse(
-#                 status_code=401,
-#                 content={"detail": "Session expired or invalid"}
-#             )
-        
-#         user = get_user_by_uid(session["user_id"])
-#         if not user:
-#             return JSONResponse(
-#                 status_code=401,
-#                 content={"detail": "User not found"}
-#             )
-    
-#     response = await call_next(request)
-#     return response
 
 # ==========================
 # MQTT STARTUP
@@ -88,46 +41,54 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     print("🚀 Initializing MQTT client...")
-    mqtt.init_mqtt()
+    init_mqtt()
+
 
 # ==========================
-# MQTT Routes
+# MQTT MANUAL CONTROL API
 # ==========================
-class GradeRequest(BaseModel):
-    grade: str
-
 @app.post("/set-grade")
 async def set_grade(req: GradeRequest):
-    mqtt.publish_grade(req.grade)
-    return {"message": f"Grade set to '{req.grade}'", "grade": req.grade}
+    publish_grade(req.grade)
+    return {
+        "message": f"Grade set to '{req.grade}'",
+        "grade": req.grade
+    }
+
 
 @app.post("/test-send-grade")
 async def test_send_grade():
-    current_grade = mqtt.mqttGrade
-    if current_grade is None:
+    if mqttGrade is None:
         return {"error": "No grade available. Please use /set-grade first."}
-    mqtt.publish_grade(current_grade)
+
+    publish_grade(mqttGrade)
     return {
-        "message": f"Current grade '{current_grade}' republished to {mqtt.GRADE_TOPIC}",
-        "grade": current_grade
+        "message": f"Current grade '{mqttGrade}' republished to {GRADE_TOPIC}",
+        "grade": mqttGrade
     }
+
 
 @app.get("/current-grade")
 async def current_grade():
-    return {"current_grade": mqtt.mqttGrade}
+    return {"current_grade": mqttGrade}
+
 
 @app.get("/current-weight")
 async def current_weight():
-    return {"current_weight": mqtt.mqttWeight}
+    return {"current_weight": mqttWeight}
+
 
 # ==========================
-# ROUTERS (no changes needed!)
+# ROUTERS
 # ==========================
-app.include_router(auth_router)
-app.include_router(user_router, prefix="/users", tags=["Users"])
+from routes.grading_routes import router as grading_router
+from routes.device_routes import router as device_router
+from routes.camera_routes import router as camera_router
+
 app.include_router(grading_router, prefix="/grading", tags=["Grading"])
 app.include_router(device_router, prefix="/device", tags=["Device / IoT"])
 app.include_router(camera_router, prefix="/camera", tags=["Camera"])
+
 
 # ==========================
 # ROOT & HEALTH
@@ -136,16 +97,13 @@ app.include_router(camera_router, prefix="/camera", tags=["Camera"])
 async def root():
     return {"message": "Dragon Fruit Grading API is running"}
 
+
 @app.get("/health")
 async def health():
     try:
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT version();"))
-            version = result.fetchone()[0]
-        pg_version = version.split(" ")[1]
-        return {
-            "status": "ok",
-            "database": f"PostgreSQL {pg_version}"
-        }
+            version = conn.execute(text("SELECT sqlite_version();")).fetchone()[0]
+        return {"status": "ok", "database": f"SQLite {version}"}
+
     except Exception as e:
         return {"status": "error", "detail": str(e)}
