@@ -1,7 +1,7 @@
 # controllers/UserController.py
 from fastapi import HTTPException
 from sqlalchemy import text
-from database import engine
+from core.database import engine
 import uuid
 import bcrypt
 
@@ -68,7 +68,17 @@ def get_all_users(page: int = 1, limit: int = 10, search: str = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
     
-
+def get_user_by_uid_safe(uid: str):
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(
+                text('SELECT uid, username, email FROM public."user" WHERE uid = :uid'),
+                {"uid": uid}
+            )
+            row = result.fetchone()
+            return {"uid": row.uid, "username": row.username, "email": row.email} if row else None
+    except Exception:
+        return None
 def get_user_by_uid(uid: str):
     try:
         with engine.connect() as conn:
