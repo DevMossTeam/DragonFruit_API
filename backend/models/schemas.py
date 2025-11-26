@@ -3,30 +3,41 @@
 from pydantic import BaseModel
 from uuid import UUID
 
+
+# ----------------------------
+# CREATE (input dari program)
+# ----------------------------
 class GradingResultCreate(BaseModel):
     filename: str
 
-    area_cm2: float
-    width_cm: float
-    height_cm: float
+    # PCV features
+    length_cm: float
+    diameter_cm: float
     weight_est_g: float
-    texture_score: float
-    hue_mean: float
+    ratio: float
 
-    area_norm: float
+    # berat aktual (optional)
+    weight_actual_g: float | None = None
+
+    # Normalization
+    length_norm: float
+    diameter_norm: float
     weight_norm: float
-    texture_norm: float
-    hue_norm: float
+    ratio_norm: float
 
+    # Fuzzy result
     fuzzy_score: float
-    fuzzy_grade_label: str
 
+    # Grading
     grade_by_weight: str
     final_grade: str
 
 
+# ----------------------------
+# RESPONSE (kembalian dari DB)
+# ----------------------------
 class GradingResultResponse(GradingResultCreate):
-    id: UUID   # ← sudah bukan int lagi
+    id: UUID
 
     class Config:
-        from_attributes = True   # pengganti orm_mode=True di Pydantic v2
+        from_attributes = True   # untuk ORM SQLAlchemy

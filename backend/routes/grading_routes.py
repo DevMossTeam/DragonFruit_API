@@ -15,78 +15,100 @@ from models.schemas import GradingResultResponse
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# ============================================
-# CONFIG: path ke CSV reference (sesuaikan)
-# ============================================
-CSV_PATH = r"E:\DragonEye\dataset\features.csv"
+# ============================================================
+# PATH CSV HARUS SAMA DENGAN DATASET FINAL
+# ============================================================
+CSV_PATH = r"E:\DragonEye\dataset\graded_features.csv"
 
-# Coba load CSV sekali saat module import (startup)
+# Load CSV saat startup modul
 reference_df = None
 try:
     if not os.path.exists(CSV_PATH):
         raise FileNotFoundError(f"Dataset CSV tidak ditemukan di: {CSV_PATH}")
+
     reference_df = pd.read_csv(CSV_PATH)
-    # strip column names spasi jika ada
+
+    # Hilangkan spasi di nama kolom jika ada
     reference_df.columns = reference_df.columns.str.strip()
-    logger.info(f"Reference CSV loaded: {CSV_PATH} ({len(reference_df)} rows)")
+
+    logger.info(f"Reference CSV loaded successfully: {CSV_PATH} ({len(reference_df)} rows)")
+
 except Exception as e:
-    # keep reference_df as None and raise on use
-    logger.exception("Gagal memuat reference CSV pada startup.")
+    logger.exception("Gagal memuat reference CSV saat startup.")
     reference_df = None
 
 
+# =====================================================================
+# ENDPOINT: /grade-image
+# =====================================================================
 @router.post("/grade-image", response_model=GradingResultResponse)
 async def grade_image(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     """
-    Endpoint untuk menerima upload gambar, melakukan grading (PCV + fuzzy)
-    dan menyimpan hasilnya ke database.
+    Menerima upload gambar, menjalankan proses grading (PCV + normalisasi +
+    fuzzy + DB insert + MQTT publish), dan mengembalikan hasil grading.
     """
 
-    # 1) Validasi reference dataframe ada
+    # 1. Cek reference CSV
     if reference_df is None:
-        logger.error("Reference CSV belum tersedia. Tidak dapat memproses grading.")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Reference dataset not available on server. Contact admin.")
+        logger.error("Reference dataset tidak tersedia.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Reference dataset not loaded on server. Contact admin."
+        )
 
-    # 2) Baca file upload sebagai image numpy (BGR)
+    # 2. Decode gambar
     try:
         img_bytes = await file.read()
+
         if not img_bytes:
-            raise ValueError("Uploaded file is empty.")
+            raise ValueError("File upload kosong.")
+
         img_arr = np.frombuffer(img_bytes, np.uint8)
         img_np = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-        if img_np is None:
-            raise ValueError("File bukan gambar yang valid atau format tidak didukung.")
-    except ValueError as ve:
-        logger.warning("Invalid upload: %s", ve)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e:
-        logger.exception("Error saat membaca file upload.")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to read uploaded image.")
 
-    # 3) Proses citra (synchronous). process_image => (result_dict, err_msg)
+        if img_np is None:
+            raise ValueError("File bukan gambar valid atau format tidak didukung.")
+
+    except ValueError as ve:
+        logger.warning(f"Upload error: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except Exception:
+        logger.exception("Error saat membaca file upload.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to read uploaded image."
+        )
+
+    # 3. Proses grading
     try:
-        result, err = process_image(
+        result, err_msg = process_image(
             image_bgr=img_np,
             reference_df=reference_df,
             filename=file.filename,
             db=db,
-            publish_mqtt=True,
+            publish_mqtt=True,                 # MQTT aktif
             fuzzy_fallback_on_invalid_weight=True
         )
-    except Exception as e:
-        logger.exception("Unexpected error during grading process.")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Internal processing error.")
+    except Exception:
+        logger.exception("Error tak terduga saat proses grading.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal processing error."
+        )
 
-    # 4) Check result / error
-    if err:
-        logger.error("Processing failed: %s", err)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=err)
+    # 4. Jika ada error di processing
+    if err_msg:
+        logger.error(f"Processing failed: {err_msg}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=err_msg
+        )
 
-    # 5) Return hasil (Pydantic model akan memvalidasi structure)
+    # 5. Return result (divalidasi oleh Pydantic)
     return result
