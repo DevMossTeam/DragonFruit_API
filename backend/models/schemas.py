@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 from uuid import UUID
+from typing import Optional
 
 
 # ----------------------------
@@ -11,26 +12,20 @@ class GradingResultCreate(BaseModel):
     filename: str
 
     # PCV features
-    length_cm: float
-    diameter_cm: float
-    weight_est_g: float
-    ratio: float
+    length_cm: Optional[float] = None
+    diameter_cm: Optional[float] = None
+    weight_est_g: Optional[float] = None
+    ratio: Optional[float] = None
 
     # berat aktual (optional)
-    weight_actual_g: float | None = None
-
-    # Normalization
-    length_norm: float
-    diameter_norm: float
-    weight_norm: float
-    ratio_norm: float
+    weight_actual_g: Optional[float] = None
 
     # Fuzzy result
-    fuzzy_score: float
+    fuzzy_score: Optional[float] = None
 
     # Grading
-    grade_by_weight: str
-    final_grade: str
+    grade_by_weight: Optional[str] = None
+    final_grade: Optional[str] = None
 
 
 # ----------------------------
@@ -40,4 +35,4 @@ class GradingResultResponse(GradingResultCreate):
     id: UUID
 
     class Config:
-        from_attributes = True   # untuk ORM SQLAlchemy
+        orm_mode = True

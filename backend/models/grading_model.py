@@ -22,13 +22,7 @@ class GradingResult(Base):
     ratio = Column(Float)           # length_cm / diameter_cm
 
     # Berat aktual dari sensor (opsional)
-    weight_actual_g = Column(Float)
-
-    # Normalized features (percentile or fixed-range normalization)
-    length_norm = Column(Float)
-    diameter_norm = Column(Float)
-    weight_norm = Column(Float)
-    ratio_norm = Column(Float)
+    weight_actual_g = Column(Float, nullable=True)
 
     # Fuzzy result (score-only)
     fuzzy_score = Column(Float)

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------
-# Normalisasi nilai aman
+# Normalisasi nilai aman (internal only)
 # -------------------------------------------------------------------
 def _safe_normalize(value: float, reference_series, lo: Optional[float] = None, hi: Optional[float] = None) -> float:
     """
@@ -55,12 +55,10 @@ def _build_result_payload(db_record: GradingResult) -> Dict[str, Any]:
         "length_cm": db_record.length_cm,
         "diameter_cm": db_record.diameter_cm,
         "weight_est_g": db_record.weight_est_g,
+        "weight_actual_g": db_record.weight_actual_g,
         "ratio": db_record.ratio,
-        "length_norm": db_record.length_norm,
-        "diameter_norm": db_record.diameter_norm,
-        "weight_norm": db_record.weight_norm,
-        "ratio_norm": db_record.ratio_norm,
         "fuzzy_score": float(db_record.fuzzy_score) if db_record.fuzzy_score is not None else None,
+        "grade_by_weight": db_record.grade_by_weight,
         "final_grade": db_record.final_grade,
     }
 
@@ -74,13 +72,23 @@ def process_image(
     filename: str,
     db: Session,
     publish_mqtt: bool = True,
-    fuzzy_fallback_on_invalid_weight: bool = True
+    fuzzy_fallback_on_invalid_weight: bool = True,
+    weight_actual_g: Optional[float] = None
 ) -> Tuple[Dict[str, Any], Optional[str]]:
     """
     Process a single image: PCV → feature extraction → normalization → fuzzy → grade → DB → MQTT.
 
+    Args:
+      - image_bgr: BGR image array
+      - reference_df: pandas DataFrame with reference columns for percentile normalization
+      - filename: original filename
+      - db: SQLAlchemy Session
+      - publish_mqtt: whether to publish result to MQTT
+      - fuzzy_fallback_on_invalid_weight: if True and no valid weight -> use fuzzy thresholds
+      - weight_actual_g: optional weight read from loadcell (grams). If provided, used as primary for grade_by_weight.
+
     Returns:
-      (result_dict, error_message). error_message=None jika sukses.
+      (result_dict, error_message). error_message=None on success.
     """
 
     # 1. Preprocess to HSV
@@ -90,14 +98,10 @@ def process_image(
     segmented, mask = segment_image(hsv)
 
     # 3. Extract visual features
-    # NEW: extract_features now returns (width_cm, height_cm, weight_g, ratio)
-    width_cm, height_cm, weight_g, ratio = extract_features(segmented, mask)
+    # extract_features returns (length_cm, diameter_cm, weight_est_g, ratio)
+    length_cm, diameter_cm, weight_est_g, ratio = extract_features(segmented, mask)
 
-    # canonical values
-    length_cm = max(width_cm, height_cm)
-    diameter_cm = min(width_cm, height_cm)
-
-    # 4. Normalization
+    # 4. Normalization (only for fuzzy computation, not stored)
     length_norm = _safe_normalize(
         length_cm,
         reference_df.get("length_cm") if hasattr(reference_df, "get") else None,
@@ -109,7 +113,7 @@ def process_image(
         lo=3.0, hi=12.0
     )
     weight_norm = _safe_normalize(
-        weight_g,
+        weight_est_g,
         reference_df.get("weight_est_g") if hasattr(reference_df, "get") else None,
         lo=150.0, hi=650.0
     )
@@ -126,17 +130,30 @@ def process_image(
 
     ratio_norm = _safe_normalize(ratio, ratio_series, lo=1.0, hi=1.8)
 
-    # 5. Fuzzy score
+    # 5. Fuzzy score (computed from normalized inputs)
     try:
         fuzzy_score = compute_fuzzy_score(length_norm, diameter_norm, weight_norm, ratio_norm)
     except Exception:
         logger.exception("Fuzzy computation failed.")
         fuzzy_score = 0.0
 
-    # 6. Final grade (weight primary)
-    final_grade = grade_from_weight(weight_g)
+    # 6. Determine weight-based grade:
+    # Prefer actual weight from sensor if provided; fallback to estimated weight.
+    primary_weight_for_grade = None
+    if weight_actual_g is not None:
+        try:
+            primary_weight_for_grade = float(weight_actual_g)
+        except Exception:
+            primary_weight_for_grade = None
 
-    if (weight_g is None or weight_g <= 0) and fuzzy_fallback_on_invalid_weight:
+    if primary_weight_for_grade is None:
+        primary_weight_for_grade = weight_est_g
+
+    grade_by_weight = grade_from_weight(primary_weight_for_grade)
+
+    # optional fallback: if primary weight invalid use fuzzy_score thresholds
+    final_grade = grade_by_weight
+    if (primary_weight_for_grade is None or primary_weight_for_grade <= 0) and fuzzy_fallback_on_invalid_weight:
         if fuzzy_score >= 70:
             final_grade = "A"
         elif fuzzy_score >= 45:
@@ -144,19 +161,17 @@ def process_image(
         else:
             final_grade = "C"
 
-    # 7. Save to DB
+    # 7. Persist to DB
     try:
         db_record = GradingResult(
             filename=filename,
             length_cm=length_cm,
             diameter_cm=diameter_cm,
-            weight_est_g=weight_g,
+            weight_est_g=weight_est_g,
+            weight_actual_g=weight_actual_g,
             ratio=ratio,
-            length_norm=length_norm,
-            diameter_norm=diameter_norm,
-            weight_norm=weight_norm,
-            ratio_norm=ratio_norm,
             fuzzy_score=float(fuzzy_score),
+            grade_by_weight=grade_by_weight,
             final_grade=final_grade
         )
 
