@@ -5,33 +5,36 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from core.database import Base
 
+
 class GradingResult(Base):
     __tablename__ = "grading_results"
 
+    # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
 
+    # Metadata
     filename = Column(String, nullable=False)
 
-    # fitur PCV
-    area_cm2 = Column(Float)
-    width_cm = Column(Float)
-    height_cm = Column(Float)
-    weight_est_g = Column(Float)
-    texture_score = Column(Float)
-    hue_mean = Column(Float)
+    # PCV features (sesuai extract_features di main.py)
+    length_cm = Column(Float)       # max(w_box, h_box) * cm_per_pixel * 0.9
+    diameter_cm = Column(Float)     # min(w_box, h_box) * cm_per_pixel * 0.9
+    weight_est_g = Column(Float)    # estimasi berat dari citra (gram)
+    ratio = Column(Float)           # length_cm / diameter_cm
 
-    # normalisasi
-    area_norm = Column(Float)
+    # Berat aktual dari sensor (opsional)
+    weight_actual_g = Column(Float)
+
+    # Normalized features (percentile or fixed-range normalization)
+    length_norm = Column(Float)
+    diameter_norm = Column(Float)
     weight_norm = Column(Float)
-    texture_norm = Column(Float)
-    hue_norm = Column(Float)
+    ratio_norm = Column(Float)
 
-    # fuzzy
+    # Fuzzy result (score-only)
     fuzzy_score = Column(Float)
-    fuzzy_grade_label = Column(String)
 
-    # berat
+    # Weight-based grade (deterministic thresholds)
     grade_by_weight = Column(String)
 
-    # final gabungan
+    # Final decision (weight determines final grade; fuzzy for reporting)
     final_grade = Column(String)
