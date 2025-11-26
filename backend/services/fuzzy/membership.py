@@ -1,11 +1,19 @@
+# file: services/fuzzy/membership.py
 import numpy as np
-import skfuzzy as fuzz
 
 def get_memberships():
-    ukuran = np.linspace(0, 1, 101)
-    berat = np.linspace(0, 1, 101)
-    tekstur = np.linspace(0, 1, 101)
-    warna = np.linspace(0, 1, 101)
-    kondisi = np.linspace(0, 100, 101)
+    """
+    Return universes (numpy arrays) for fuzzy variables.
+    - length: normalized 0..1 (cm mapped externally)
+    - diameter: normalized 0..1 (cm mapped externally)
+    - weight: normalized 0..1 (g mapped externally)
+    - ratio: normalized 0..1 (L/D mapped externally)
+    - score: output universe 0..100
+    """
+    length = np.linspace(0, 1, 101)
+    diameter = np.linspace(0, 1, 101)
+    weight = np.linspace(0, 1, 101)
+    ratio = np.linspace(0, 1, 101)
+    score = np.linspace(0, 100, 101)
 
-    return ukuran, berat, tekstur, warna, kondisi
+    return length, diameter, weight, ratio, score

@@ -1,46 +1,71 @@
-import numpy as np            # <-- WAJIB DITAMBAHKAN
+# file: services/fuzzy/rules.py
+import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
 def build_fuzzy_controller():
-    ukuran = ctrl.Antecedent(np.linspace(0, 1, 101), 'ukuran')
-    berat = ctrl.Antecedent(np.linspace(0, 1, 101), 'berat')
-    tekstur = ctrl.Antecedent(np.linspace(0, 1, 101), 'tekstur')
-    warna = ctrl.Antecedent(np.linspace(0, 1, 101), 'warna')
-    kondisi = ctrl.Consequent(np.linspace(0, 100, 101), 'kondisi')
+    """
+    Build and return a skfuzzy.control.ControlSystem configured with:
+    - antecedents: length, diameter, weight, ratio (each 0..1)
+    - consequent: score (0..100)
+    The rules are designed so weight is primary factor, length/diameter/ratio are supportive.
+    """
 
-    # --- Definisi fuzzy set ---
-    ukuran['kecil'] = fuzz.trimf(ukuran.universe, [0.0, 0.0, 0.4])
-    ukuran['sedang'] = fuzz.trimf(ukuran.universe, [0.3, 0.55, 0.75])
-    ukuran['besar'] = fuzz.trimf(ukuran.universe, [0.6, 1.0, 1.0])
+    # Antecedent universes
+    length = ctrl.Antecedent(np.linspace(0, 1, 101), 'length')
+    diameter = ctrl.Antecedent(np.linspace(0, 1, 101), 'diameter')
+    weight = ctrl.Antecedent(np.linspace(0, 1, 101), 'weight')
+    ratio = ctrl.Antecedent(np.linspace(0, 1, 101), 'ratio')
 
-    berat['rendah'] = fuzz.trimf(berat.universe, [0.0, 0.0, 0.4])
-    berat['sedang'] = fuzz.trimf(berat.universe, [0.3, 0.55, 0.75])
-    berat['tinggi'] = fuzz.trimf(berat.universe, [0.6, 1.0, 1.0])
+    # Consequent
+    score = ctrl.Consequent(np.linspace(0, 100, 101), 'score')
 
-    tekstur['kasar'] = fuzz.trimf(tekstur.universe, [0.0, 0.0, 0.3])
-    tekstur['normal'] = fuzz.trimf(tekstur.universe, [0.2, 0.45, 0.7])
-    tekstur['halus'] = fuzz.trimf(tekstur.universe, [0.4, 0.7, 1.0])
+    # Membership functions for length & diameter (small / medium / large)
+    length['small']  = fuzz.trimf(length.universe, [0.0, 0.0, 0.4])
+    length['medium'] = fuzz.trimf(length.universe, [0.3, 0.55, 0.75])
+    length['large']  = fuzz.trimf(length.universe, [0.6, 1.0, 1.0])
 
-    warna['gelap'] = fuzz.trimf(warna.universe, [0.0, 0.0, 0.4])
-    warna['normal'] = fuzz.trimf(warna.universe, [0.3, 0.55, 0.8])
-    warna['cerah'] = fuzz.trimf(warna.universe, [0.65, 1.0, 1.0])
+    diameter['small']  = fuzz.trimf(diameter.universe, [0.0, 0.0, 0.4])
+    diameter['medium'] = fuzz.trimf(diameter.universe, [0.3, 0.55, 0.75])
+    diameter['large']  = fuzz.trimf(diameter.universe, [0.6, 1.0, 1.0])
 
-    kondisi['rotten'] = fuzz.trimf(kondisi.universe, [0, 0, 40])
-    kondisi['defect'] = fuzz.trimf(kondisi.universe, [35, 55, 75])
-    kondisi['good'] = fuzz.trimf(kondisi.universe, [65, 100, 100])
+    # Membership for weight (low / mid / high)
+    weight['low']  = fuzz.trimf(weight.universe, [0.0, 0.0, 0.4])
+    weight['mid']  = fuzz.trimf(weight.universe, [0.3, 0.55, 0.75])
+    weight['high'] = fuzz.trimf(weight.universe, [0.6, 1.0, 1.0])
+
+    # Membership for ratio (L/D) - poor/normal/good (higher ratio often desirable)
+    ratio['poor']   = fuzz.trimf(ratio.universe, [0.0, 0.0, 0.4])
+    ratio['normal'] = fuzz.trimf(ratio.universe, [0.3, 0.55, 0.75])
+    ratio['good']   = fuzz.trimf(ratio.universe, [0.6, 1.0, 1.0])
+
+    # Output memberships for score (low/mid/high)
+    score['low']  = fuzz.trimf(score.universe, [0, 0, 40])
+    score['mid']  = fuzz.trimf(score.universe, [30, 55, 75])
+    score['high'] = fuzz.trimf(score.universe, [65, 100, 100])
 
     # --- Rules ---
+    # Principle: weight dominates; size & ratio support/promote higher score.
     rules = [
-        ctrl.Rule(ukuran['besar'] & berat['tinggi'], kondisi['good']),
-        ctrl.Rule(berat['tinggi'] & tekstur['halus'], kondisi['good']),
-        ctrl.Rule(ukuran['sedang'] & berat['sedang'] & tekstur['halus'], kondisi['good']),
-        ctrl.Rule(ukuran['sedang'] & berat['sedang'], kondisi['defect']),
-        ctrl.Rule(tekstur['kasar'] | berat['rendah'], kondisi['rotten']),
-        ctrl.Rule(warna['cerah'] & tekstur['halus'], kondisi['good']),
-        ctrl.Rule(warna['normal'] & tekstur['halus'], kondisi['good']),
-        ctrl.Rule(warna['normal'] & tekstur['normal'], kondisi['defect']),
-        ctrl.Rule(warna['gelap'] & tekstur['kasar'], kondisi['rotten']),
+        # Strong positive: heavy + large -> high score
+        ctrl.Rule(weight['high'] & length['large'], score['high']),
+        ctrl.Rule(weight['high'] & diameter['large'], score['high']),
+        ctrl.Rule(weight['high'] & ratio['good'], score['high']),
+
+        # Medium: mid weight with decent size/ratio -> mid score
+        ctrl.Rule(weight['mid'] & (length['medium'] | diameter['medium']), score['mid']),
+        ctrl.Rule(weight['mid'] & ratio['normal'], score['mid']),
+
+        # Low weight mostly -> low score (overrides size)
+        ctrl.Rule(weight['low'], score['low']),
+
+        # Supportive rules: large size & good ratio increase score even if weight mid
+        ctrl.Rule((length['large'] & ratio['good']) & weight['mid'], score['high']),
+        ctrl.Rule((diameter['large'] & ratio['good']) & weight['mid'], score['high']),
+
+        # If size small and ratio poor -> low score
+        ctrl.Rule(length['small'] & ratio['poor'], score['low']),
+        ctrl.Rule(diameter['small'] & ratio['poor'], score['low']),
     ]
 
     return ctrl.ControlSystem(rules)
