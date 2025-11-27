@@ -58,10 +58,30 @@ async def login(response: Response, request: LoginRequest):
 @router.post("/logout")
 async def logout(request: Request, response: Response):
     session_id = request.cookies.get("session_id")
+    
+    user_info = {"uid": None, "username": None}  # default in case of anonymous/no session
+
     if session_id:
+        session = get_session(session_id)  # retrieve session data
+        if session:
+            user = get_user_by_uid(session["user_id"])
+            if user:
+                user_info = {
+                    "uid": user["uid"],
+                    "username": user["username"]
+                }
+        # Delete the session regardless
         delete_session(session_id)
+
+    # Always delete the cookie
     response.delete_cookie("session_id")
-    return {"message": "Logged out successfully"}
+
+    return {
+        "message": f"User '{user_info['username']}' logged out successfully" 
+                   if user_info["username"] 
+                   else "Logged out successfully",
+        "user": user_info
+    }
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user=Depends(get_current_user)):

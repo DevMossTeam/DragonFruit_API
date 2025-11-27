@@ -39,48 +39,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # ==========================
-# AUTH MIDDLEWARE (all in main.py)
+# STARTUP: SHOW LOCAL IP ADDRESS
 # ==========================
-# PUBLIC_PATHS = [
-#     r"^/$",
-#     r"^/health$",
-#     r"^/api/auth/.*",  # All auth routes are public
-# ]
-
-# @app.middleware("http")
-# async def auth_middleware(request: Request, call_next):
-#     path = request.url.path
-
-#     # Check if path is public
-#     is_public = any(re.match(pattern, path) for pattern in PUBLIC_PATHS)
-    
-#     if not is_public:
-#         # Verify session
-#         session_id = request.cookies.get("session_id")
-#         if not session_id:
-#             return JSONResponse(
-#                 status_code=401,
-#                 content={"detail": "Not authenticated"}
-#             )
-        
-#         session = get_session(session_id)
-#         if not session:
-#             return JSONResponse(
-#                 status_code=401,
-#                 content={"detail": "Session expired or invalid"}
-#             )
-        
-#         user = get_user_by_uid(session["user_id"])
-#         if not user:
-#             return JSONResponse(
-#                 status_code=401,
-#                 content={"detail": "User not found"}
-#             )
-    
-#     response = await call_next(request)
-#     return response
+def get_local_ip():
+    """Get the local IP address used for Wi-Fi (en0) on macOS."""
+    try:
+        # Create a dummy connection to get the outbound interface IP
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        return ip
+    except Exception:
+        # Fallback: try to get en0 IP explicitly (macOS Wi-Fi)
+        try:
+            ip = os.popen("ipconfig getifaddr en0 2>/dev/null").read().strip()
+            if ip:
+                return ip
+            # Try en1 (in case of USB/Ethernet or older Macs)
+            ip = os.popen("ipconfig getifaddr en1 2>/dev/null").read().strip()
+            return ip if ip else "127.0.0.1"
+        except Exception:
+            return "127.0.0.1"
 
 # ==========================
 # MQTT STARTUP

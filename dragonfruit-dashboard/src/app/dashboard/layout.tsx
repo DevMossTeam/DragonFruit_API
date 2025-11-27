@@ -4,6 +4,7 @@
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import { useState } from 'react';
+import AuthGuard from './components/AuthGuard';
 
 export default function DashboardLayout({
   children,
@@ -17,20 +18,16 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Top Navbar */}
-      <Navbar onToggleSidebar={handleToggleSidebar} />
-
-      {/* Main Content with Sidebar */}
-      <div className="flex flex-1 pt-16">
-        {/* Sidebar */}
-        <Sidebar />
-
-        {/* Page Content */}
-        <main className="flex-1 p-6 md:ml-64 w-full overflow-y-auto">
-          {children}
-        </main>
+    <AuthGuard> {/* 👈 Wrap entire layout */}
+      <div className="flex flex-col min-h-screen bg-gray-100">
+        <Navbar onToggleSidebar={handleToggleSidebar} />
+        <div className="flex flex-1 pt-16">
+          <Sidebar />
+          <main className="flex-1 p-6 md:ml-64 w-full overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
