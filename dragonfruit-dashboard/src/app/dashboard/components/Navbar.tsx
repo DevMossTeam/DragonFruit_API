@@ -2,7 +2,8 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDragon, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getCurrentUser } from '@/lib/auth'; // ← Import auth helper
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -10,10 +11,20 @@ interface NavbarProps {
 
 export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleToggle = () => {
     setSidebarOpen(!sidebarOpen);
-    // Dispatch event to sidebar
     const event = new Event('toggleSidebar');
     window.dispatchEvent(event);
     onToggleSidebar?.();
@@ -49,9 +60,16 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               </a>
             </div>
 
-            {/* User Email */}
-            <div className="flex items-center">
-              <p className="text-sm font-medium text-gray-300">dummy@gmail.com</p>
+            {/* User Info */}
+            <div className="flex flex-col items-end gap-1">
+              {user ? (
+                <>
+                  <p className="text-sm font-medium text-gray-300">{user.username}</p>
+                  <p className="text-xs text-gray-400">{user.email}</p>
+                </>
+              ) : (
+                <p className="text-sm font-medium text-gray-300">Not logged in</p>
+              )}
             </div>
           </div>
         </div>

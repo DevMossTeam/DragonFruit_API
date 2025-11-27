@@ -20,6 +20,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      <div className="bg-white p-6 border border-gray-200 rounded-lg shadow-sm w-full">
+        {/* <p className="text-gray-600 mb-6">
+          Here are the biggest technology acquisitions of 2025 so far, in reverse chronological order:
+        </p> */}
+       
+      </div>
+
       {/* Statistik Utama */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Graded */}
@@ -40,22 +47,86 @@ export default function DashboardPage() {
           <p className="text-2xl font-bold text-gray-900 mt-1">{stats.gradeB}%</p>
         </div>
 
-        {/* Status Mesin */}
-        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
-          <p className="text-sm font-medium text-gray-500">Status Mesin IoT</p>
+        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-red-500">
+          <p className="text-sm font-medium text-gray-500">Grade C</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.gradeC}%</p>
+        </div>
+      </div>
+      {/* Status Mesin */}
+      <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
+          <h5 className="mb-3 text-1xl font-semibold text-gray-900">Status Koneksi Mesin</h5>
           <div className="flex items-center mt-1">
             <span className="inline-flex w-3 h-3 rounded-full bg-green-500 mr-2"></span>
             <span className="font-medium text-gray-900">
               {stats.machineStatus === 'online' ? 'Online' : 'Offline'}
             </span>
           </div>
-          <p className="text-xs text-gray-500 mt-1">{stats.lastScan}</p>
-        </div>
-      </div>
+          <p className="text-xs text-gray-500 my-1 mb-3">{stats.lastScan}</p>
+          <a
+            href="#"
+            className="inline-flex items-center text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 font-medium text-sm px-4 py-2.5 rounded-lg focus:outline-none"
+          >
+            Read more
+            <svg className="w-4 h-4 ms-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5m14 0-4 4m4-4-4-4"/>
+            </svg>
+          </a>
+      </div>     
 
       {/* Grafik & Aktivitas Terbaru */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Distribusi Grade (Pie Chart Placeholder) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 border-b border-gray-200">  
+        {/* Aktivitas Terbaru */}
+        <div className="bg-white rounded-xl shadow p-5 lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Aktivitas Terbaru</h2>
+            <a href="/logs" className="text-sm text-blue-600 hover:underline">Lihat semua</a>
+          </div>
+          <div className="overflow-x-auto border-b border-gray-200">
+            <table className="min-w-full text-sm text-gray-600">
+              <thead>
+                <tr className="border-b">
+                  <th className="py-2 text-left">Tanggal</th>
+                  <th className="py-2 text-left">File Name</th>
+                  <th className="py-2 text-left">Berat (Gram)</th>
+                  <th className="py-2 text-left">Ukuran Area (cm)</th>
+                  <th className="py-2 text-left">Nilai Berat</th>
+                  <th className="py-2 text-left">Nilai Ukuran</th>
+                  <th className="py-2 text-left">Berat Grade</th>
+                  <th className="py-2 text-left">Fuzzy Grade</th>
+                  <th className="py-2 text-left">Final Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b hover:bg-gray-50">
+                  <td className="py-2">10:42</td>
+                  <td className="py-2">DN-0428</td>
+                  <td className="py-2">
+                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">A</span>
+                  </td>
+                  <td className="py-2">12.3</td>
+                </tr>
+                <tr className="border-b hover:bg-gray-50">
+                  <td className="py-2">10:41</td>
+                  <td className="py-2">DN-0427</td>
+                  <td className="py-2">
+                    <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">B</span>
+                  </td>
+                  <td className="py-2">11.7</td>
+                </tr>
+                <tr className="border-b hover:bg-gray-50">
+                  <td className="py-2">10:40</td>
+                  <td className="py-2">DN-0426</td>
+                  <td className="py-2">
+                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">A</span>
+                  </td>
+                  <td className="py-2">12.8</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+           {/* Distribusi Grade (Pie Chart Placeholder) */}
         <div className="bg-white rounded-xl shadow p-5 lg:col-span-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Distribusi Grade</h2>
           <div className="space-y-3">
@@ -97,56 +168,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* Aktivitas Terbaru */}
-        <div className="bg-white rounded-xl shadow p-5 lg:col-span-2">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Aktivitas Terbaru</h2>
-            <a href="/logs" className="text-sm text-blue-600 hover:underline">Lihat semua</a>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-gray-600">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 text-left">Waktu</th>
-                  <th className="py-2 text-left">ID Buah</th>
-                  <th className="py-2 text-left">Grade</th>
-                  <th className="py-2 text-left">Ukuran (cm)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-2">10:42</td>
-                  <td className="py-2">DN-0428</td>
-                  <td className="py-2">
-                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">A</span>
-                  </td>
-                  <td className="py-2">12.3</td>
-                </tr>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-2">10:41</td>
-                  <td className="py-2">DN-0427</td>
-                  <td className="py-2">
-                    <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">B</span>
-                  </td>
-                  <td className="py-2">11.7</td>
-                </tr>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-2">10:40</td>
-                  <td className="py-2">DN-0426</td>
-                  <td className="py-2">
-                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">A</span>
-                  </td>
-                  <td className="py-2">12.8</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
       {/* Panel Kontrol Cepat */}
-      <div className="bg-white rounded-xl shadow p-5">
+      {/* <div className="bg-white rounded-xl shadow p-5">
         <h2 className="text-lg font-semibold text-gray-800 mb-3">Kontrol Mesin</h2>
         <div className="flex flex-wrap gap-3">
           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
@@ -162,7 +187,7 @@ export default function DashboardPage() {
             Lihat Log IoT
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

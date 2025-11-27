@@ -1,34 +1,46 @@
-// src/app/components/Sidebar.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faChartLine, faUsers } from '@fortawesome/free-solid-svg-icons';
+import {
+  faTachometerAlt,
+  faChartLine,
+  faUsers,
+  faCog,
+  faRightFromBracket, // ← Add this
+} from '@fortawesome/free-solid-svg-icons';
+
+import { logout } from '@/lib/auth';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Listen for custom events from navbar
     const handleToggle = () => {
       setIsOpen((prev) => !prev);
     };
-
     window.addEventListener('toggleSidebar', handleToggle);
     return () => window.removeEventListener('toggleSidebar', handleToggle);
   }, []);
+
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/login';
+  };
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: faTachometerAlt },
     { href: '/dashboard/graph', label: 'Analytics', icon: faChartLine },
     { href: '/dashboard/users', label: 'Users', icon: faUsers },
+    { href: '/dashboard/setting', label: 'Setting', icon: faCog },
   ];
 
   return (
     <>
       {/* Desktop Sidebar - Always visible */}
       <aside className="hidden md:flex md:fixed md:left-0 md:top-16 md:z-40 md:w-64 md:h-[calc(100vh-64px)] md:flex-col md:border-r md:border-gray-200 md:bg-white">
-        <div className="px-3 py-4 overflow-y-auto flex-1">
+        <div className="px-3 py-4 overflow-y-auto flex flex-col h-full">
           <ul className="space-y-2 font-medium">
             {menuItems.map((item) => (
               <li key={item.href}>
@@ -45,6 +57,20 @@ export default function Sidebar() {
               </li>
             ))}
           </ul>
+
+          {/* Logout at bottom (desktop) */}
+          <div className="mt-auto pt-4 border-t border-gray-200">
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full p-2 text-gray-900 rounded-lg hover:bg-red-600 hover:text-white transition-colors duration-150 group"
+            >
+              <FontAwesomeIcon
+                icon={faRightFromBracket}
+                className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors"
+              />
+              <span className="ms-3">Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -61,7 +87,7 @@ export default function Sidebar() {
           isOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'
         }`}
       >
-        <div className="px-3 py-4 overflow-y-auto h-full">
+        <div className="px-3 py-4 overflow-y-auto h-full flex flex-col">
           <ul className="space-y-2 font-medium">
             {menuItems.map((item) => (
               <li key={item.href}>
@@ -79,10 +105,26 @@ export default function Sidebar() {
               </li>
             ))}
           </ul>
+
+          {/* Logout at bottom (mobile) */}
+          <div className="mt-auto pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                handleLogout();
+              }}
+              className="flex items-center w-full p-2 text-gray-900 rounded-lg hover:bg-red-600 hover:text-white transition-colors duration-150 group"
+            >
+              <FontAwesomeIcon
+                icon={faRightFromBracket}
+                className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors"
+              />
+              <span className="ms-3">Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Script to expose sidebar toggle globally */}
       <script
         dangerouslySetInnerHTML={{
           __html: `
