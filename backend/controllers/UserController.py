@@ -1,7 +1,7 @@
 # controllers/UserController.py
 from fastapi import HTTPException
 from sqlalchemy import text
-from core.database import engine
+from database import engine
 import uuid
 import bcrypt
 

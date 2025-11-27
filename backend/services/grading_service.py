@@ -62,6 +62,31 @@ def _build_result_payload(db_record: GradingResult) -> Dict[str, Any]:
         "final_grade": db_record.final_grade,
     }
 
+# -------------------------------------------------------------------
+# Wrapper untuk kompatibilitas lama
+# -------------------------------------------------------------------
+def process_grading(
+    image_bgr,
+    reference_df,
+    filename,
+    db,
+    publish_mqtt=True,
+    fuzzy_fallback_on_invalid_weight=True,
+    weight_actual_g=None
+):
+    """
+    Wrapper agar kode lama yang memanggil 'process_grading'
+    tetap bekerja dengan fungsi baru 'process_image'.
+    """
+    return process_image(
+        image_bgr=image_bgr,
+        reference_df=reference_df,
+        filename=filename,
+        db=db,
+        publish_mqtt=publish_mqtt,
+        fuzzy_fallback_on_invalid_weight=fuzzy_fallback_on_invalid_weight,
+        weight_actual_g=weight_actual_g
+    )
 
 # -------------------------------------------------------------------
 # PROSES UTAMA: Grading
