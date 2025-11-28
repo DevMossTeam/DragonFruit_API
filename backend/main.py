@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 # Core
 from core.database import engine
-from core.mqtt import init_mqtt, publish_grade, mqttGrade, mqttWeight, GRADE_TOPIC
+from core.mqtt import init_mqtt, publish_grade, get_mqtt_grade, get_mqtt_weight, GRADE_TOPIC
 
 # Auth & User
 from auth.session import get_session
@@ -53,23 +53,34 @@ async def set_grade(req: GradeRequest):
     publish_grade(req.grade)
     return {"message": f"Grade set to '{req.grade}'", "grade": req.grade}
 
+# @app.post("/test-send-grade")
+# async def test_send_grade():
+#     if mqttGrade is None:
+#         return {"error": "No grade available. Please use /set-grade first."}
+#     publish_grade(mqttGrade)
+#     return {
+#         "message": f"Current grade '{mqttGrade}' republished to {GRADE_TOPIC}",
+#         "grade": mqttGrade
+    # }
+
+@app.get("/current-weight")
+async def current_weight():
+    return {"current_weight": get_mqtt_weight()}
+
 @app.post("/test-send-grade")
 async def test_send_grade():
-    if mqttGrade is None:
+    current_grade = get_mqtt_grade()
+    if current_grade is None:
         return {"error": "No grade available. Please use /set-grade first."}
-    publish_grade(mqttGrade)
+    publish_grade(current_grade)
     return {
-        "message": f"Current grade '{mqttGrade}' republished to {GRADE_TOPIC}",
-        "grade": mqttGrade
+        "message": f"Current grade '{current_grade}' republished to {GRADE_TOPIC}",
+        "grade": current_grade
     }
 
 @app.get("/current-grade")
 async def current_grade():
-    return {"current_grade": mqttGrade}
-
-@app.get("/current-weight")
-async def current_weight():
-    return {"current_weight": mqttWeight}
+    return {"current_grade": get_mqtt_grade()}
 
 # ==========================
 # ROUTERS
