@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { fetchFromAPI } from '@/lib/api';
+import {
+  fetchClassificationMetrics,
+  fetchConfusionMatrix,
+  getMetricsWithCache,
+  MetricsData,
+  ConfusionMatrixResponse,
+} from '@/lib/metrics';
 
 // Dynamic import to avoid SSR issues with ApexCharts
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -61,13 +68,27 @@ interface SectionData {
 
 export default function GraphPage() {
   const [sectionData, setSectionData] = useState<SectionData | null>(null);
+  const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
+  const [confusionMatrix, setConfusionMatrix] = useState<number[][] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchChartData = async () => {
       try {
-        // Mock data - replace with actual API calls
+        // Fetch classification metrics
+        const metricsResponse = await fetchClassificationMetrics();
+        if (metricsResponse.status === 'success' && metricsResponse.metrics) {
+          setMetricsData(metricsResponse.metrics);
+        }
+
+        // Fetch confusion matrix
+        const cmResponse = await fetchConfusionMatrix();
+        if (cmResponse && cmResponse.status === 'success') {
+          setConfusionMatrix(cmResponse.confusion_matrix);
+        }
+
+        // Mock data for other sections - replace with actual API calls
         const mockData: SectionData = {
           iotHealth: {
             uptime: { label: 'Uptime', value: 99.8, unit: '%', status: 'good' },
@@ -100,10 +121,30 @@ export default function GraphPage() {
             ],
           },
           machineLearning: {
-            fuzzyAccuracy: { label: 'Fuzzy Logic Accuracy', value: 94.7, unit: '%', status: 'good' },
-            precision: { label: 'Precision', value: 95.2, unit: '%', status: 'good' },
-            recall: { label: 'Recall', value: 94.1, unit: '%', status: 'good' },
-            f1Score: { label: 'F1 Score', value: 94.6, unit: '%', status: 'good' },
+            fuzzyAccuracy: {
+              label: 'Fuzzy Logic Accuracy',
+              value: metricsData?.accuracy ? metricsData.accuracy * 100 : 94.7,
+              unit: '%',
+              status: 'good',
+            },
+            precision: {
+              label: 'Precision',
+              value: metricsData?.macro_precision ? metricsData.macro_precision * 100 : 95.2,
+              unit: '%',
+              status: 'good',
+            },
+            recall: {
+              label: 'Recall',
+              value: metricsData?.macro_recall ? metricsData.macro_recall * 100 : 94.1,
+              unit: '%',
+              status: 'good',
+            },
+            f1Score: {
+              label: 'F1 Score',
+              value: metricsData?.macro_f1 ? metricsData.macro_f1 * 100 : 94.6,
+              unit: '%',
+              status: 'good',
+            },
             dailyData: [
               { date: 'Mon', fuzzyAccuracy: 94.5, precision: 95.0, recall: 93.9 },
               { date: 'Tue', fuzzyAccuracy: 94.7, precision: 95.2, recall: 94.1 },
@@ -436,27 +477,35 @@ export default function GraphPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-slate-200 hover:bg-emerald-50">
-                  <td className="px-4 py-2 font-bold text-slate-900 bg-emerald-100">Grade A</td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-emerald-200 text-emerald-900 px-2 py-1 rounded text-sm font-bold">342</div></td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">18</div></td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">5</div></td>
-                  <td className="px-4 py-2 text-center font-bold text-slate-900">365</td>
-                </tr>
-                <tr className="border-b border-slate-200 hover:bg-amber-50">
-                  <td className="px-4 py-2 font-bold text-slate-900 bg-amber-100">Grade B</td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">22</div></td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-amber-200 text-amber-900 px-2 py-1 rounded text-sm font-bold">148</div></td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">8</div></td>
-                  <td className="px-4 py-2 text-center font-bold text-slate-900">178</td>
-                </tr>
-                <tr className="hover:bg-rose-50">
-                  <td className="px-4 py-2 font-bold text-slate-900 bg-rose-100">Grade C</td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">8</div></td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">12</div></td>
-                  <td className="px-4 py-2 text-center"><div className="inline-block bg-rose-200 text-rose-900 px-2 py-1 rounded text-sm font-bold">57</div></td>
-                  <td className="px-4 py-2 text-center font-bold text-slate-900">77</td>
-                </tr>
+                {confusionMatrix ? (
+                  <>
+                    <tr className="border-b border-slate-200 hover:bg-emerald-50">
+                      <td className="px-4 py-2 font-bold text-slate-900 bg-emerald-100">Grade A</td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-emerald-200 text-emerald-900 px-2 py-1 rounded text-sm font-bold">{confusionMatrix[0][0]}</div></td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">{confusionMatrix[0][1]}</div></td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">{confusionMatrix[0][2]}</div></td>
+                      <td className="px-4 py-2 text-center font-bold text-slate-900">{confusionMatrix[0][0] + confusionMatrix[0][1] + confusionMatrix[0][2]}</td>
+                    </tr>
+                    <tr className="border-b border-slate-200 hover:bg-amber-50">
+                      <td className="px-4 py-2 font-bold text-slate-900 bg-amber-100">Grade B</td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">{confusionMatrix[1][0]}</div></td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-amber-200 text-amber-900 px-2 py-1 rounded text-sm font-bold">{confusionMatrix[1][1]}</div></td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">{confusionMatrix[1][2]}</div></td>
+                      <td className="px-4 py-2 text-center font-bold text-slate-900">{confusionMatrix[1][0] + confusionMatrix[1][1] + confusionMatrix[1][2]}</td>
+                    </tr>
+                    <tr className="hover:bg-rose-50">
+                      <td className="px-4 py-2 font-bold text-slate-900 bg-rose-100">Grade C</td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">{confusionMatrix[2][0]}</div></td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">{confusionMatrix[2][1]}</div></td>
+                      <td className="px-4 py-2 text-center"><div className="inline-block bg-rose-200 text-rose-900 px-2 py-1 rounded text-sm font-bold">{confusionMatrix[2][2]}</div></td>
+                      <td className="px-4 py-2 text-center font-bold text-slate-900">{confusionMatrix[2][0] + confusionMatrix[2][1] + confusionMatrix[2][2]}</td>
+                    </tr>
+                  </>
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-4 text-center text-slate-500">Loading confusion matrix...</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -465,18 +514,37 @@ export default function GraphPage() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 rounded border border-blue-300">
               <p className="text-sm text-blue-700 font-bold mb-2">TRUE POSITIVES</p>
-              <p className="text-sm text-slate-700"><span className="font-bold">547</span> correctly classified</p>
-              <p className="text-xs text-slate-500 mt-1">94.7% accuracy</p>
+              <p className="text-sm text-slate-700">
+                <span className="font-bold">
+                  {metricsData && confusionMatrix
+                    ? confusionMatrix[0][0] + confusionMatrix[1][1] + confusionMatrix[2][2]
+                    : '0'}
+                </span>{' '}
+                correctly classified
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                {metricsData ? `${(metricsData.accuracy * 100).toFixed(1)}% accuracy` : 'Accuracy: 0%'}
+              </p>
             </div>
             <div className="p-4 bg-yellow-50 rounded border border-yellow-300">
-              <p className="text-sm text-yellow-700 font-bold mb-2">FALSE POSITIVES</p>
-              <p className="text-sm text-slate-700"><span className="font-bold">60</span> misclassified</p>
-              <p className="text-xs text-slate-500 mt-1">Precision: 95.2%</p>
+              <p className="text-sm text-yellow-700 font-bold mb-2">PRECISION</p>
+              <p className="text-sm text-slate-700">
+                <span className="font-bold">
+                  {metricsData ? (metricsData.macro_precision * 100).toFixed(1) : '0'}%
+                </span>{' '}
+                average precision
+              </p>
+              <p className="text-xs text-slate-500 mt-1">A: {metricsData ? (metricsData.precision_A * 100).toFixed(1) : '0'}% | B: {metricsData ? (metricsData.precision_B * 100).toFixed(1) : '0'}% | C: {metricsData ? (metricsData.precision_C * 100).toFixed(1) : '0'}%</p>
             </div>
             <div className="p-4 bg-purple-50 rounded border border-purple-300">
-              <p className="text-sm text-purple-700 font-bold mb-2">FALSE NEGATIVES</p>
-              <p className="text-sm text-slate-700"><span className="font-bold">33</span> missed samples</p>
-              <p className="text-xs text-slate-500 mt-1">Recall: 94.1%</p>
+              <p className="text-sm text-purple-700 font-bold mb-2">RECALL</p>
+              <p className="text-sm text-slate-700">
+                <span className="font-bold">
+                  {metricsData ? (metricsData.macro_recall * 100).toFixed(1) : '0'}%
+                </span>{' '}
+                average recall
+              </p>
+              <p className="text-xs text-slate-500 mt-1">A: {metricsData ? (metricsData.recall_A * 100).toFixed(1) : '0'}% | B: {metricsData ? (metricsData.recall_B * 100).toFixed(1) : '0'}% | C: {metricsData ? (metricsData.recall_C * 100).toFixed(1) : '0'}%</p>
             </div>
           </div>
         </div>

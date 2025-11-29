@@ -1,19 +1,112 @@
 // src/app/dashboard/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+interface GradingResult {
+  id: string;
+  filename: string;
+  length_cm: number;
+  diameter_cm: number;
+  weight_est_g: number;
+  weight_actual_g: number;
+  ratio: number;
+  fuzzy_score: number;
+  grade_by_weight: string;
+  final_grade: "A" | "B" | "C";
+  tanggal: string;
+}
+
+interface ApiResponse {
+  data: GradingResult[];
+  total: number;
+  message: string;
+}
 
 export default function DashboardPage() {
-  const stats = {
-    totalGraded: 428,
-    gradeA: 65,
-    gradeB: 28,
-    gradeC: 7,
-    machineStatus: 'online',
-    lastScan: '2 menit yang lalu',
-  };
-
+  const [allData, setAllData] = useState<GradingResult[]>([]);
+  const [filteredData, setFilteredData] = useState<GradingResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedFilter, setSelectedFilter] = useState('Semua');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const itemsPerPage = 20;
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const paginatedData = filteredData.slice(startIdx, endIdx);
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://127.0.0.1:8000/api/gradingresult/all');
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const result: ApiResponse = await response.json();
+        
+        // Sort by newest first (descending order)
+        const sortedData = result.data.sort((a, b) => {
+          const dateA = new Date(a.tanggal).getTime();
+          const dateB = new Date(b.tanggal).getTime();
+          return dateB - dateA;
+        });
+
+        setAllData(sortedData);
+        setFilteredData(sortedData);
+        setCurrentPage(1);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Handle filtering
+  useEffect(() => {
+    if (selectedFilter === "Semua") {
+      setFilteredData(allData);
+    } else {
+      const grade = selectedFilter.split(" ")[1];
+      setFilteredData(allData.filter(item => item.final_grade === grade));
+    }
+    setCurrentPage(1);
+  }, [selectedFilter, allData]);
+
+  // Calculate statistics for today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayData = allData.filter(item => {
+    const itemDate = new Date(item.tanggal);
+    itemDate.setHours(0, 0, 0, 0);
+    return itemDate.getTime() === today.getTime();
+  });
+
+  const todayGradeA = todayData.filter(item => item.final_grade === "A").length;
+  const gradeARate = todayData.length > 0 ? Math.round((todayGradeA / todayData.length) * 100) : 0;
+
+  const stats = {
+    totalGraded: allData.length,
+    gradeA: allData.filter(item => item.final_grade === "A").length,
+    gradeB: allData.filter(item => item.final_grade === "B").length,
+    gradeC: allData.filter(item => item.final_grade === "C").length,
+    machineStatus: 'online',
+    lastScan: 'Real-time',
+    todayRecords: todayData.length,
+    todayGradeARate: gradeARate,
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 space-y-8">
@@ -53,7 +146,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-4xl font-bold text-slate-900 mb-2">{stats.totalGraded}</p>
-            <p className="text-slate-600 text-sm">buah graded hari ini</p>
+            <p className="text-slate-600 text-sm">buah graded keseluruhan</p>
             <div className="mt-4 h-1 bg-linear-to-r from-blue-400 to-cyan-400 rounded-full"></div>
           </div>
         </div>
@@ -70,7 +163,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-4xl font-bold text-slate-900 mb-2">{stats.gradeA}%</p>
+            <p className="text-4xl font-bold text-slate-900 mb-2">{stats.gradeA}</p>
             <p className="text-slate-600 text-sm">Excellent quality</p>
             <div className="mt-4 h-1 bg-linear-to-r from-emerald-400 to-teal-400 rounded-full"></div>
           </div>
@@ -88,7 +181,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-4xl font-bold text-slate-900 mb-2">{stats.gradeB}%</p>
+            <p className="text-4xl font-bold text-slate-900 mb-2">{stats.gradeB}</p>
             <p className="text-slate-600 text-sm">Good quality</p>
             <div className="mt-4 h-1 bg-linear-to-r from-amber-400 to-orange-400 rounded-full"></div>
           </div>
@@ -106,7 +199,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-4xl font-bold text-slate-900 mb-2">{stats.gradeC}%</p>
+            <p className="text-4xl font-bold text-slate-900 mb-2">{stats.gradeC}</p>
             <p className="text-slate-600 text-sm">Fair quality</p>
             <div className="mt-4 h-1 bg-linear-to-r from-rose-400 to-red-400 rounded-full"></div>
           </div>
@@ -118,7 +211,7 @@ export default function DashboardPage() {
         <div className="absolute top-0 right-0 w-40 h-40 bg-linear-to-br from-emerald-100 to-cyan-100 rounded-full blur-3xl opacity-20"></div>
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-slate-900">Status Koneksi Mesin</h3>
+            <h3 className="text-2xl font-bold text-slate-900">Status Koneksi API</h3>
             <div className="px-4 py-2 bg-emerald-100 rounded-full border border-emerald-200">
               <div className="flex items-center gap-2">
                 <span className="flex h-3 w-3">
@@ -134,7 +227,7 @@ export default function DashboardPage() {
           <p className="text-slate-500 text-sm mb-4">{stats.lastScan}</p>
           <div className="p-4 bg-linear-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
             <p className="text-slate-700 text-sm">
-              <span className="font-semibold text-emerald-600">✓</span> Mesin dalam kondisi optimal dan siap beroperasi
+              <span className="font-semibold text-emerald-600">✓</span> API terhubung dan siap melayani {allData.length} data grading
             </p>
           </div>
         </div>
@@ -147,7 +240,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-2">Riwayat Penilaian Buah</h2>
-              <p className="text-slate-500 text-sm">Pantau hasil grading terbaru dari sistem</p>
+              <p className="text-slate-500 text-sm">Pantau hasil grading terbaru dari sistem (Newest First)</p>
             </div>
 
             {/* Filter Dropdown */}
@@ -160,7 +253,7 @@ export default function DashboardPage() {
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12.414 11.414a1 1 0 00-.293.707v5.172a1 1 0 01-.578.894l-2 1A1 1 0 018 17.69V12.414a1 1 0 00-.293-.707L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
                 </svg>
-                Filter
+                {selectedFilter}
                 <svg
                   className={`ml-2 h-4 w-4 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`}
                   fill="none"
@@ -183,9 +276,13 @@ export default function DashboardPage() {
                     {['Semua', 'Grade A', 'Grade B', 'Grade C'].map((filter) => (
                       <li key={filter}>
                         <button
-                          className="block w-full px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 text-left transition-colors duration-150 border-l-4 border-transparent hover:border-blue-500"
+                          className={`block w-full px-4 py-3 text-sm text-left transition-colors duration-150 border-l-4 ${
+                            selectedFilter === filter
+                              ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                              : 'border-transparent text-slate-700 hover:bg-blue-50 hover:border-blue-500'
+                          }`}
                           onClick={() => {
-                            console.log(`Filter: ${filter}`);
+                            setSelectedFilter(filter);
                             setIsFilterOpen(false);
                           }}
                         >
@@ -199,90 +296,160 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-slate-300 bg-linear-to-r from-slate-100 via-blue-50 to-cyan-50">
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Tanggal</th>
-                  {/* <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">File Name</th> */}
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Berat (Gram)</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Ukuran Area (cm)</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Nilai Berat</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Nilai Ukuran</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Berat Grade</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Fuzzy Grade</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Final Grade</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {[
-                  { tanggal: '10:42',  berat: '428g', ukuran: '8.5cm', nilaiB: '85%', nilaiU: '88%', beratG: 'A', fuzzyG: 'A', finalG: 'A' },
-                  { tanggal: '10:41',  berat: '412g', ukuran: '8.2cm', nilaiB: '78%', nilaiU: '82%', beratG: 'B', fuzzyG: 'B', finalG: 'B' },
-                  { tanggal: '10:40',  berat: '445g', ukuran: '8.7cm', nilaiB: '92%', nilaiU: '95%', beratG: 'A', fuzzyG: 'A', finalG: 'A' },
-                ].map((row, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50 transition-colors duration-150 group">
-                    <td className="px-6 py-4 text-slate-600 text-sm">{row.tanggal}</td>
-                    <td className="px-6 py-4 text-slate-600">{row.berat}</td>
-                    <td className="px-6 py-4 text-slate-600">{row.ukuran}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-700">
-                        {row.nilaiB}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-cyan-100 text-cyan-700">
-                        {row.nilaiU}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                        row.beratG === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                        row.beratG === 'B' ? 'bg-amber-100 text-amber-700' :
-                        'bg-rose-100 text-rose-700'
-                      }`}>
-                        Grade {row.beratG}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                        row.fuzzyG === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                        row.fuzzyG === 'B' ? 'bg-amber-100 text-amber-700' :
-                        'bg-rose-100 text-rose-700'
-                      }`}>
-                        Grade {row.fuzzyG}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border-2 ${
-                        row.finalG === 'A' ? 'bg-emerald-50 text-emerald-700 border-emerald-400' :
-                        row.finalG === 'B' ? 'bg-amber-50 text-amber-700 border-amber-400' :
-                        'bg-rose-50 text-rose-700 border-rose-400'
-                      }`}>
-                        {row.finalG}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          )}
 
-          {/* Footer Stats */}
-          <div className="mt-6 grid grid-cols-3 gap-4 p-4 bg-linear-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">3</p>
-              <p className="text-xs text-slate-600 mt-1">Records Today</p>
+          {/* Error State */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+              <p className="text-red-700 text-sm">Error: {error}</p>
             </div>
-            <div className="text-center border-l border-r border-slate-300">
-              <p className="text-2xl font-bold text-emerald-600">67%</p>
-              <p className="text-xs text-slate-600 mt-1">Grade A Rate</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-cyan-600">428</p>
-              <p className="text-xs text-slate-600 mt-1">Total Graded</p>
-            </div>
-          </div>
+          )}
+
+          {/* Table */}
+          {!loading && !error && (
+            <>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-slate-300 bg-linear-to-r from-slate-100 via-blue-50 to-cyan-50">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Tanggal</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Berat (g)</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Length (cm)</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Diameter (cm)</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Ratio</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Fuzzy Score</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Grade Weight</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Final Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {paginatedData.length > 0 ? (
+                      paginatedData.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-blue-50 transition-colors duration-150 group">
+                          <td className="px-6 py-4 text-slate-600 text-sm whitespace-nowrap">
+                            {new Date(row.tanggal).toLocaleString('id-ID')}
+                          </td>
+                          <td className="px-6 py-4 text-slate-600">{row.weight_actual_g?.toFixed(1) || 'N/A'}</td>
+                          <td className="px-6 py-4 text-slate-600">{row.length_cm?.toFixed(2) || 'N/A'}</td>
+                          <td className="px-6 py-4 text-slate-600">{row.diameter_cm?.toFixed(2) || 'N/A'}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-700">
+                              {row.ratio?.toFixed(3) || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-cyan-100 text-cyan-700">
+                              {row.fuzzy_score?.toFixed(1) || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              row.grade_by_weight === 'A' ? 'bg-emerald-100 text-emerald-700' :
+                              row.grade_by_weight === 'B' ? 'bg-amber-100 text-amber-700' :
+                              'bg-rose-100 text-rose-700'
+                            }`}>
+                              Grade {row.grade_by_weight}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border-2 ${
+                              row.final_grade === 'A' ? 'bg-emerald-50 text-emerald-700 border-emerald-400' :
+                              row.final_grade === 'B' ? 'bg-amber-50 text-amber-700 border-amber-400' :
+                              'bg-rose-50 text-rose-700 border-rose-400'
+                            }`}>
+                              {row.final_grade}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
+                          No data available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {filteredData.length > 0 && (
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="text-sm text-slate-600">
+                    Showing {startIdx + 1} to {Math.min(endIdx, filteredData.length)} of {filteredData.length} results
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }).map((_, idx) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = idx + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = idx + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + idx;
+                        } else {
+                          pageNum = currentPage - 2 + idx;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                              currentPage === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-700 bg-slate-100 border border-slate-300 hover:bg-slate-200'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Stats */}
+              <div className="mt-6 grid grid-cols-3 gap-4 p-4 bg-linear-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">{stats.todayRecords}</p>
+                  <p className="text-xs text-slate-600 mt-1">Records Today</p>
+                </div>
+                <div className="text-center border-l border-r border-slate-300">
+                  <p className="text-2xl font-bold text-emerald-600">{stats.todayGradeARate}%</p>
+                  <p className="text-xs text-slate-600 mt-1">Grade A Rate Today</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-cyan-600">{stats.totalGraded}</p>
+                  <p className="text-xs text-slate-600 mt-1">Total Graded</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

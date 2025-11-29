@@ -15,16 +15,19 @@ from controllers.UserController import get_user_by_uid
 from routes.grading_routes import router as grading_router
 from routes.device_routes import router as device_router
 from auth.api_login import router as api_auth_router
+from routes.metrics_routes import router as metrics_router
 
 # Request model
 from pydantic import BaseModel
+from controllers.GradingresultController import router as gradingresult_router 
 
 class GradeRequest(BaseModel):
     grade: str
 
 
 app = FastAPI(title="Dragon Fruit Grading API")
-
+app.include_router(gradingresult_router, prefix="/api/gradingresult", tags=["Grading Results"])
+app.include_router(metrics_router, prefix="/api", tags=["Metrics"])
 # ==========================
 # CORS - MUST BE FIRST!
 # ==========================
@@ -124,7 +127,69 @@ async def health():
 
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+
+
+@app.get("/debug/db-status")
+async def debug_db_status():
+    """Debug endpoint to check database and grading_results table status"""
+    try:
+        with engine.connect() as conn:
+            # Check if table exists
+            result = conn.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'grading_results'
+                )
+            """)).fetchone()
+            
+            table_exists = result[0] if result else False
+            
+            if table_exists:
+                # Count records
+                count_result = conn.execute(text("SELECT COUNT(*) FROM grading_results")).fetchone()
+                record_count = count_result[0] if count_result else 0
+                
+                return {
+                    "status": "ok",
+                    "table_exists": True,
+                    "table_name": "grading_results",
+                    "record_count": record_count,
+                    "message": f"Table exists with {record_count} records"
+                }
+            else:
+                return {
+                    "status": "warning",
+                    "table_exists": False,
+                    "table_name": "grading_results",
+                    "message": "Table does not exist. Run migrations or create it."
+                }
+    except Exception as e:
+        return {
+            "status": "error",
+            "detail": str(e),
+            "message": "Failed to check database status"
+        }
     
+# ==========================
+# DATABASE MIGRATIONS
+# ==========================
+@app.post("/debug/create-tables")
+async def create_tables():
+    """Create all database tables from models"""
+    try:
+        from core.database import Base
+        Base.metadata.create_all(bind=engine)
+        return {
+            "status": "ok",
+            "message": "All tables created successfully"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "detail": str(e),
+            "message": "Failed to create tables"
+        }
+
 # ==========================
 # DEBUG: List all routes (optional, remove in production)
 # ==========================

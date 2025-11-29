@@ -1,5 +1,6 @@
 # models/schemas.py
 
+from datetime import datetime
 from pydantic import BaseModel
 from uuid import UUID
 from typing import Optional
@@ -26,6 +27,7 @@ class GradingResultCreate(BaseModel):
     # Grading
     grade_by_weight: Optional[str] = None
     final_grade: Optional[str] = None
+    tanggal: datetime 
 
 
 # ----------------------------

@@ -1,8 +1,9 @@
 # models/grading_model.py
 
-from sqlalchemy import Column, String, Float
+from sqlalchemy import Column, String, Float, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
+from datetime import datetime
 from core.database import Base
 
 
@@ -14,6 +15,7 @@ class GradingResult(Base):
 
     # Metadata
     filename = Column(String, nullable=False)
+    tanggal = Column(DateTime, default=datetime.utcnow, nullable=True)
 
     # PCV features (sesuai extract_features di main.py)
     length_cm = Column(Float)       # max(w_box, h_box) * cm_per_pixel * 0.9
