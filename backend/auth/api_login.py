@@ -1,38 +1,39 @@
-# auth/api_login.py
-
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from pydantic import BaseModel
-from controllers.UserController import get_user_by_username_or_email  # ← NEW FUNCTION NAME
+from controllers.UserController import get_user_by_username_or_email, get_user_by_uid
 from auth.security import verify_password
-from auth.session import create_session
+from auth.session import create_session, get_session, delete_session
 
-print("🔥 API Login Router Loaded!")
-
-router = APIRouter(tags=["auth"])
+router = APIRouter(tags=["Auth"])  # ✅ No prefix here
 
 class LoginRequest(BaseModel):
-    username_or_email: str  # Accepts either username or email
-    password: str           # Required
+    username_or_email: str
+    password: str
 
 class UserResponse(BaseModel):
     uid: str
     username: str
     email: str
 
+async def get_current_user(request: Request):
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=401, detail="Session expired")
+    user = get_user_by_uid(session["user_id"])
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
 @router.post("/login")
-async def api_login(
-    response: Response,
-    request: LoginRequest
-):
+async def login(response: Response, request: LoginRequest):
     user = get_user_by_username_or_email(request.username_or_email)
     if not user or not verify_password(request.password, user["hashed_password"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
-        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     session_id = create_session(user["uid"])
-    
     response.set_cookie(
         key="session_id",
         value=session_id,
@@ -41,9 +42,9 @@ async def api_login(
         samesite="lax",
         max_age=3600
     )
-    
     return {
         "message": "Logged in successfully",
+        "session_id": session_id,
         "user": UserResponse(
             uid=user["uid"],
             username=user["username"],
@@ -52,10 +53,29 @@ async def api_login(
     }
 
 @router.post("/logout")
-async def api_logout(request: Request, response: Response):
+async def logout(request: Request, response: Response):
     session_id = request.cookies.get("session_id")
+    user_info = {"uid": None, "username": None}
+
     if session_id:
-        from auth.session import delete_session
+        session = get_session(session_id)
+        if session:
+            user = get_user_by_uid(session["user_id"])
+            if user:
+                user_info = {
+                    "uid": user["uid"],
+                    "username": user["username"]
+                }
         delete_session(session_id)
+
     response.delete_cookie("session_id")
-    return {"message": "Logged out successfully"}
+    message = (
+        f"User '{user_info['username']}' logged out successfully"
+        if user_info["username"]
+        else "Logged out successfully"
+    )
+    return {"message": message, "user": user_info}
+
+@router.get("/me", response_model=UserResponse)
+async def read_users_me(current_user=Depends(get_current_user)):
+    return current_user

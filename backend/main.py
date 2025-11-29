@@ -14,6 +14,7 @@ from controllers.UserController import get_user_by_uid
 # Routers
 from routes.grading_routes import router as grading_router
 from routes.device_routes import router as device_router
+from auth.api_login import router as api_auth_router
 
 # Request model
 from pydantic import BaseModel
@@ -104,7 +105,7 @@ from routes.camera_routes import router as camera_router
 app.include_router(grading_router, prefix="/grading", tags=["Grading"])
 app.include_router(camera_router, prefix="/camera", tags=["Camera"])
 app.include_router(device_router, prefix="/device", tags=["Device / IoT"])
-
+app.include_router(api_auth_router, prefix="/api/auth", tags=["Auth"])
 
 # ==========================
 # ROOT & HEALTH
