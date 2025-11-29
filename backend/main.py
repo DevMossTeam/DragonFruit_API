@@ -64,7 +64,6 @@ async def set_grade(req: GradeRequest):
         "grade": req.grade
     }
 
-
 # @app.post("/test-send-grade")
 # async def test_send_grade():
 #     if mqttGrade is None:
@@ -89,7 +88,6 @@ async def test_send_grade():
         "message": f"Current grade '{current_grade}' republished to {GRADE_TOPIC}",
         "grade": current_grade
     }
-
 
 @app.get("/current-grade")
 async def current_grade():
@@ -124,3 +122,11 @@ async def health():
 
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+    
+# ==========================
+# DEBUG: List all routes (optional, remove in production)
+# ==========================
+@app.get("/debug/routes")
+def debug_routes():
+    routes = [r.path for r in app.routes if hasattr(r, 'path')]
+    return {"routes": sorted(routes)}
