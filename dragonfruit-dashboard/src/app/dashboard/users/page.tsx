@@ -24,17 +24,27 @@ export default function UsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(7);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false); // For dropdown
 
   const fetchUsers = async (page = 1, search = '', size = pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const url = `/users/?page=${page}&limit=${size}${search ? `&search=${encodeURIComponent(search)}` : ''}`;
       const response: UsersResponse = await fetchFromAPI(url);
-      setUsers(response.users);
-      setTotalPages(Math.ceil(response.count / size));
+      
+      if (!response || !response.users) {
+        throw new Error('Invalid response format');
+      }
+      
+      setUsers(response.users || []);
+      setTotalPages(Math.ceil((response.count || 0) / size));
+      setError(null);
     } catch (err) {
-      setError('Failed to load users');
+      console.error('Error fetching users:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -51,9 +61,13 @@ export default function UsersPage() {
       await fetchFromAPI(`/users/${uid}`, {
         method: 'DELETE',
       });
+      setMessage('User deleted successfully');
+      setTimeout(() => setMessage(''), 3000);
       fetchUsers(currentPage, appliedSearch);
     } catch (err) {
-      setError('Failed to delete user');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete user';
+      setError(errorMsg);
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -106,258 +120,200 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="p-6">
-      {/* Breadcrumb */}
-      <nav className="flex mb-6" aria-label="Breadcrumb">
-        <div className="flex" aria-label="Breadcrumb">
-          <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-            <li className="inline-flex items-center">
-              <a href="/dashboard" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                <svg className="w-3 h-3 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
-                </svg>
-                Home
-              </a>
-            </li>
-            <li>
-              <div className="flex items-center">
-                <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
-                </svg>
-                <a href="/dashboard" className="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Projects</a>
-              </div>
-            </li>
-            <li aria-current="page">
-              <div className="flex items-center">
-                <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
-                </svg>
-                <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Flowbite</span>
-              </div>
-            </li>
-          </ol>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 p-5 space-y-5">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold bg-linear-to-r from-blue-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent mb-1">
+          User Management
+        </h1>
+        <p className="text-base text-slate-600">
+          Manage and monitor all system users
+        </p>
+      </div>
 
-      {/* Page Header */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      {/* Alerts */}
+      {message && (
+        <div className="p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-lg flex items-start gap-2">
+          <div className="text-emerald-600 text-lg">✓</div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">User Management</h1>
-            <p className="text-sm text-gray-500 mt-1">Track and manage your system users.</p>
+            <h3 className="font-semibold text-emerald-900 text-sm">{message}</h3>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center">
-              Export
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17h18V7H3v10z" />
-              </svg>
-            </button> */}
-            <a
-              href="/dashboard/users/form"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center justify-center"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Add User
-            </a>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start gap-2">
+          <div className="text-red-600 text-lg">✕</div>
+          <div>
+            <h3 className="font-semibold text-red-900 text-sm">{error}</h3>
           </div>
+        </div>
+      )}
+
+      {/* Top Bar */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 border border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">User Directory</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Total users: <span className="font-semibold text-slate-700">({totalPages * pageSize})</span></p>
+          </div>
+          <a
+            href="/dashboard/users/form"
+            className="px-5 py-2 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add New User
+          </a>
         </div>
 
         {/* Search & Filter */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* 🔍 Search - triggers on Enter only */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search by username or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleSearchKeyDown} // ✅ Only search on Enter
-              className="text-gray-500 w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              onKeyDown={handleSearchKeyDown}
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-slate-50 transition text-sm"
             />
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
 
-          {/* 🗂️ Filter Dropdown */}
-          <div className="relative inline-block text-left">
+          {/* Filter Button */}
+          <div className="relative">
             <button
-              id="filterDropdownButton"
               onClick={toggleFilter}
-              type="button"
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center"
+              className="px-5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.586.894l-6 6a1 1 0 01-1.414 0l-6-6A1 1 0 013 6.586V4z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-6-6" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               Filter
-              <svg className="w-2.5 h-2.5 ms-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                <path
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="m1 1 4 4 4-4"
-                />
-              </svg>
             </button>
 
-            {/* Dropdown menu */}
+            {/* Dropdown */}
             {filterOpen && (
-              <div
-                id="filterDropdown"
-                className="absolute right-0 z-10 mt-2 w-44 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                role="menu"
-                aria-orientation="vertical"
-                aria-labelledby="filterDropdownButton"
-                tabIndex={-1}
-              >
-                <ul className="py-1 text-sm text-gray-700" role="none">
-                  <li>
-                    <button
-                      onClick={() => {
-                        setFilterOpen(false);
-                        // Example: apply a filter
-                        // You can extend this with state like filterBy="newest"
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      role="menuitem"
-                    >
-                      Newest First
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        setFilterOpen(false);
-                        // Example: apply another filter
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      role="menuitem"
-                    >
-                      Oldest First
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        setFilterOpen(false);
-                        // Reset filter
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      role="menuitem"
-                    >
-                      Clear Filter
-                    </button>
-                  </li>
-                </ul>
+              <div className="absolute right-0 z-10 mt-2 w-48 bg-white border border-slate-300 rounded-xl shadow-xl overflow-hidden">
+                <button
+                  onClick={() => { setFilterOpen(false); }}
+                  className="w-full px-4 py-2 text-left hover:bg-blue-50 text-slate-700 font-medium text-sm transition"
+                >
+                  Newest First
+                </button>
+                <button
+                  onClick={() => { setFilterOpen(false); }}
+                  className="w-full px-4 py-2 text-left hover:bg-blue-50 text-slate-700 font-medium text-sm transition border-t"
+                >
+                  Oldest First
+                </button>
+                <button
+                  onClick={() => { setFilterOpen(false); }}
+                  className="w-full px-4 py-2 text-left hover:bg-blue-50 text-slate-700 font-medium text-sm transition border-t"
+                >
+                  Clear Filter
+                </button>
               </div>
             )}
           </div>
         </div>
+      </div>
 
-        {/* Users Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden mt-5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-700">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th scope="col" className="px-6 py-3 font-medium text-xs uppercase tracking-wider text-gray-500">
-                    No
-                  </th>
-                  <th scope="col" className="px-6 py-3 font-medium text-xs uppercase tracking-wider text-gray-500">
-                    ID
-                  </th>
-                  <th scope="col" className="px-6 py-3 font-medium text-xs uppercase tracking-wider text-gray-500">
-                    Username
-                  </th>
-                  <th scope="col" className="px-6 py-3 font-medium text-xs uppercase tracking-wider text-gray-500">
-                    Email
-                  </th>
-                  <th scope="col" className="px-6 py-3 font-medium text-xs uppercase tracking-wider text-gray-500">
-                    Created At
-                  </th>
-                  <th scope="col" className="px-6 py-3 font-medium text-xs uppercase tracking-wider text-gray-500">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map((user, idx) => (
-                  <tr key={user.uid} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+      {/* Users Table */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b-2 border-slate-200 bg-linear-to-r from-slate-50 to-blue-50">
+                <th className="px-5 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">No</th>
+                <th className="px-5 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Username</th>
+                <th className="px-5 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Email</th>
+                <th className="px-5 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Joined</th>
+                <th className="px-5 py-3 text-center text-xs font-bold text-slate-700 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {users.map((user, idx) => (
+                <tr key={user.uid} className="hover:bg-blue-50 transition-colors duration-200 group">
+                  <td className="px-5 py-3">
+                    <span className="inline-block bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-xs font-semibold">
                       {(currentPage - 1) * pageSize + idx + 1}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{user.uid}</td>
-                    <td className="px-6 py-4">{user.username}</td>
-                    <td className="px-6 py-4">{user.email}</td>
-                    <td className="px-6 py-4 text-gray-500">01 Jan, 2024</td>
-                    <td className="px-6 py-4">
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xs">
+                        {user.username[0].toUpperCase()}
+                      </div>
+                      <span className="font-semibold text-slate-900 text-sm">{user.username}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-slate-600 text-sm">{user.email}</td>
+                  <td className="px-5 py-3 text-slate-500 text-xs">01 Jan, 2024</td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-center gap-2">
                       <a
                         href={`/dashboard/users/form?uid=${user.uid}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium mr-4"
+                        className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 transition text-xs"
                       >
                         Edit
                       </a>
                       <button
                         onClick={() => handleDelete(user.uid)}
-                        className="text-red-600 hover:text-red-800 font-medium"
+                        className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-xs"
                       >
                         Delete
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(currentPage * pageSize, users.length)}</span> of{' '}
-              <span className="font-medium">{totalPages * pageSize}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-3 py-2 border rounded-md text-sm font-medium ${
-                  currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => handlePageChange(i + 1)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    currentPage === i + 1 ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {i + 1}
-                </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="px-5 py-3 border-t-2 border-slate-200 bg-linear-to-r from-slate-50 to-blue-50 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-slate-600">
+            Showing <span className="font-bold text-slate-900">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+            <span className="font-bold text-slate-900">{Math.min(currentPage * pageSize, users.length)}</span> of{' '}
+            <span className="font-bold text-slate-900">{totalPages * pageSize}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-2 py-1.5 rounded-lg font-semibold transition text-xs ${
+                currentPage === 1 ? 'text-slate-400 cursor-not-allowed bg-slate-100' : 'text-slate-700 hover:bg-blue-100'
+              }`}
+            >
+              ← Prev
+            </button>
+            {[...Array(totalPages)].map((_, i) => (
               <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`px-3 py-2 border rounded-md text-sm font-medium ${
-                  currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'
+                key={i + 1}
+                onClick={() => handlePageChange(i + 1)}
+                className={`px-2 py-1.5 rounded-lg font-semibold transition text-xs ${
+                  currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-700 hover:bg-slate-200 border border-slate-300'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                {i + 1}
               </button>
-            </div>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-2 py-1.5 rounded-lg font-semibold transition text-xs ${
+                currentPage === totalPages ? 'text-slate-400 cursor-not-allowed bg-slate-100' : 'text-slate-700 hover:bg-blue-100'
+              }`}
+            >
+              Next →
+            </button>
           </div>
         </div>
       </div>

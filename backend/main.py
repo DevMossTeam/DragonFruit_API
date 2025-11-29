@@ -25,22 +25,22 @@ class GradeRequest(BaseModel):
 
 app = FastAPI(title="Dragon Fruit Grading API")
 
-
 # ==========================
-# CORS
+# CORS - MUST BE FIRST!
 # ==========================
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],  # Allow all methods including OPTIONS
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 
@@ -99,11 +99,13 @@ async def current_grade():
 # ==========================
 from routes.grading_routes import router as grading_router
 from routes.camera_routes import router as camera_router
+from routes.user import router as user_router
 
 app.include_router(grading_router, prefix="/grading", tags=["Grading"])
 app.include_router(camera_router, prefix="/camera", tags=["Camera"])
 app.include_router(device_router, prefix="/device", tags=["Device / IoT"])
 app.include_router(api_auth_router, prefix="/api/auth", tags=["Auth"])
+app.include_router(user_router, prefix="/users", tags=["Users"])
 
 # ==========================
 # ROOT & HEALTH

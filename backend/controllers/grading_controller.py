@@ -99,3 +99,8 @@ def process_and_grade_image(img, filename):
     db.refresh(record)
 
     return record
+
+def postTable():
+    db = SessionLocal()
+
+    

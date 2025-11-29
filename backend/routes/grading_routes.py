@@ -24,14 +24,30 @@ CSV_PATH = r"E:\DragonEye\dataset\graded_features.csv"
 reference_df = None
 try:
     if not os.path.exists(CSV_PATH):
-        raise FileNotFoundError(f"Dataset CSV tidak ditemukan di: {CSV_PATH}")
-
-    reference_df = pd.read_csv(CSV_PATH)
-
-    # Hilangkan spasi di nama kolom jika ada
-    reference_df.columns = reference_df.columns.str.strip()
-
-    logger.info(f"Reference CSV loaded successfully: {CSV_PATH} ({len(reference_df)} rows)")
+        # Try alternative paths if Windows path doesn't exist
+        alt_paths = [
+            os.path.join(os.path.dirname(__file__), "..", "dataset", "graded_features.csv"),
+            os.path.expanduser("~/dataset/graded_features.csv"),
+        ]
+        
+        found = False
+        for alt_path in alt_paths:
+            if os.path.exists(alt_path):
+                CSV_PATH = alt_path
+                found = True
+                break
+        
+        if not found:
+            logger.warning(f"Dataset CSV tidak ditemukan di: {CSV_PATH}")
+            reference_df = None
+        else:
+            reference_df = pd.read_csv(CSV_PATH)
+            reference_df.columns = reference_df.columns.str.strip()
+            logger.info(f"Reference CSV loaded successfully: {CSV_PATH} ({len(reference_df)} rows)")
+    else:
+        reference_df = pd.read_csv(CSV_PATH)
+        reference_df.columns = reference_df.columns.str.strip()
+        logger.info(f"Reference CSV loaded successfully: {CSV_PATH} ({len(reference_df)} rows)")
 
 except Exception as e:
     logger.exception("Gagal memuat reference CSV saat startup.")

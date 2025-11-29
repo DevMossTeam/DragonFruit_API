@@ -23,7 +23,7 @@ export default function DashboardLayout({
         <Navbar onToggleSidebar={handleToggleSidebar} />
         <div className="flex flex-1 pt-16">
           <Sidebar />
-          <main className="flex-1 p-6 md:ml-64 w-full overflow-y-auto">
+          <main className="flex-1 md:ml-64 w-full overflow-y-auto">
             {children}
           </main>
         </div>

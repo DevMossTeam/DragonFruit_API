@@ -4,7 +4,7 @@ from controllers.UserController import get_user_by_username_or_email, get_user_b
 from auth.security import verify_password
 from auth.session import create_session, get_session, delete_session
 
-router = APIRouter(tags=["Auth"])  # ✅ No prefix here
+router = APIRouter(tags=["Auth"])
 
 class LoginRequest(BaseModel):
     username_or_email: str
@@ -26,6 +26,11 @@ async def get_current_user(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+
+# Handle preflight requests
+@router.options("/login")
+async def options_login():
+    return {"message": "OK"}
 
 @router.post("/login")
 async def login(response: Response, request: LoginRequest):
@@ -76,6 +81,16 @@ async def logout(request: Request, response: Response):
     )
     return {"message": message, "user": user_info}
 
+# Handle preflight for logout
+@router.options("/logout")
+async def options_logout():
+    return {"message": "OK"}
+
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user=Depends(get_current_user)):
     return current_user
+
+# Handle preflight for me
+@router.options("/me")
+async def options_me():
+    return {"message": "OK"}

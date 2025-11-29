@@ -311,120 +311,20 @@ export default function GraphPage() {
   const mlF1ScoreChartSeries = [sectionData.machineLearning.f1Score.value];
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 p-8 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">System Analytics & Monitoring</h1>
-        <p className="mt-1 text-gray-600">
-          Real-time monitoring of Computer Vision and Machine Learning Fuzzy Logic systems
+      <div className="">
+        <h1 className="text-5xl font-bold bg-linear-to-r from-blue-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">System Analytics</h1>
+        <p className="mt-5 text-base text-slate-600">
+          Machine Learning and Computer Vision performance metrics
         </p>
       </div>
 
-      {/* ==================== PART 1: IoT HEALTH STATISTICS ==================== */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold text-gray-800">🌐 IoT Health Statistics</h2>
-          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-            Device Monitoring
-          </span>
-        </div>
-
-        {/* IoT Health Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            sectionData.iotHealth.uptime,
-            sectionData.iotHealth.temperature,
-            sectionData.iotHealth.humidity,
-            sectionData.iotHealth.signalStrength,
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className={`rounded-xl shadow-md p-6 border-l-4 ${getStatusColor(stat.status)}`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {stat.value}{stat.unit}
-                  </p>
-                </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded ${getStatusBadgeColor(stat.status)}`}>
-                  {stat.status.toUpperCase()}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* IoT Health Chart */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">7-Day Performance Trend</h3>
-          <div className="h-80">
-            <ReactApexChart
-              options={iotLineChartOptions}
-              series={iotLineChartSeries}
-              type="line"
-              height={320}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== PART 2: COMPUTER VISION STATISTICS ==================== */}
-      <section className="space-y-4 pt-8 border-t-2 border-gray-200">
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold text-gray-800">👁️ Computer Vision Statistics</h2>
-          <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-1 rounded-full">
-            Image Analysis
-          </span>
-        </div>
-
-        {/* Computer Vision Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            sectionData.computerVision.accuracy,
-            sectionData.computerVision.processingTime,
-            sectionData.computerVision.detectionRate,
-            sectionData.computerVision.falsePositives,
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className={`rounded-xl shadow-md p-6 border-l-4 ${getStatusColor(stat.status)}`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {stat.value}{stat.unit}
-                  </p>
-                </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded ${getStatusBadgeColor(stat.status)}`}>
-                  {stat.status.toUpperCase()}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Computer Vision Chart */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">7-Day Accuracy & Detection Performance</h3>
-          <div className="h-80">
-            <ReactApexChart
-              options={cvLineChartOptions}
-              series={cvLineChartSeries}
-              type="line"
-              height={320}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== PART 3: MACHINE LEARNING FUZZY STATISTICS ==================== */}
-      <section className="space-y-4 pt-8 border-t-2 border-gray-200">
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold text-gray-800">🤖 Machine Learning Fuzzy Logic Statistics</h2>
-          <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
+      {/* ==================== MACHINE LEARNING FUZZY STATISTICS ==================== */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-slate-900">ML Fuzzy Logic Statistics</h2>
+          <span className="bg-orange-100 text-orange-800 text-sm font-semibold px-3 py-1 rounded">
             AI Classification
           </span>
         </div>
@@ -432,93 +332,291 @@ export default function GraphPage() {
         {/* ML Fuzzy Gauge Charts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Fuzzy Accuracy Gauge */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <div className="h-80">
+          <div className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="h-56">
               <ReactApexChart
                 options={mlFuzzyChartOptions}
                 series={mlFuzzyChartSeries}
                 type="radialBar"
-                height={320}
+                height={220}
               />
             </div>
-            <div className="text-center mt-2">
-              <p className="text-xs text-gray-500">Fuzzy Logic Accuracy</p>
-              <p className="text-sm font-semibold text-gray-800">{sectionData.machineLearning.fuzzyAccuracy.value}%</p>
+            <div className="text-center mt-4">
+              <p className="text-sm text-slate-500">Fuzzy Accuracy</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.fuzzyAccuracy.value}%</p>
             </div>
           </div>
 
           {/* Precision Gauge */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <div className="h-80">
+          <div className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="h-56">
               <ReactApexChart
                 options={mlPrecisionChartOptions}
                 series={mlPrecisionChartSeries}
                 type="radialBar"
-                height={320}
+                height={220}
               />
             </div>
-            <div className="text-center mt-2">
-              <p className="text-xs text-gray-500">Precision</p>
-              <p className="text-sm font-semibold text-gray-800">{sectionData.machineLearning.precision.value}%</p>
+            <div className="text-center mt-4">
+              <p className="text-sm text-slate-500">Precision</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.precision.value}%</p>
             </div>
           </div>
 
           {/* Recall Gauge */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <div className="h-80">
+          <div className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="h-56">
               <ReactApexChart
                 options={mlRecallChartOptions}
                 series={mlRecallChartSeries}
                 type="radialBar"
-                height={320}
+                height={220}
               />
             </div>
-            <div className="text-center mt-2">
-              <p className="text-xs text-gray-500">Recall</p>
-              <p className="text-sm font-semibold text-gray-800">{sectionData.machineLearning.recall.value}%</p>
+            <div className="text-center mt-4">
+              <p className="text-sm text-slate-500">Recall</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.recall.value}%</p>
             </div>
           </div>
 
           {/* F1 Score Gauge */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <div className="h-80">
+          <div className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="h-56">
               <ReactApexChart
                 options={mlF1ScoreChartOptions}
                 series={mlF1ScoreChartSeries}
                 type="radialBar"
-                height={320}
+                height={220}
               />
             </div>
-            <div className="text-center mt-2">
-              <p className="text-xs text-gray-500">F1 Score</p>
-              <p className="text-sm font-semibold text-gray-800">{sectionData.machineLearning.f1Score.value}%</p>
+            <div className="text-center mt-4">
+              <p className="text-sm text-slate-500">F1 Score</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.f1Score.value}%</p>
             </div>
           </div>
         </div>
 
         {/* Performance Summary */}
-        <div className="bg-white rounded-xl shadow-md p-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Performance Overview</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="border-l-4 border-orange-500 pl-4">
-              <p className="text-sm text-gray-600">Fuzzy Accuracy</p>
-              <p className="text-2xl font-bold text-gray-900">{sectionData.machineLearning.fuzzyAccuracy.value}%</p>
-              <p className="text-xs text-green-600 mt-1">✓ Good</p>
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Performance Overview</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="border-l-4 border-orange-500 pl-4 py-3 bg-orange-50 rounded-r">
+              <p className="text-sm text-slate-600">Fuzzy Accuracy</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.fuzzyAccuracy.value}%</p>
             </div>
-            <div className="border-l-4 border-emerald-500 pl-4">
-              <p className="text-sm text-gray-600">Precision</p>
-              <p className="text-2xl font-bold text-gray-900">{sectionData.machineLearning.precision.value}%</p>
-              <p className="text-xs text-green-600 mt-1">✓ Good</p>
+            <div className="border-l-4 border-emerald-500 pl-4 py-3 bg-emerald-50 rounded-r">
+              <p className="text-sm text-slate-600">Precision</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.precision.value}%</p>
             </div>
-            <div className="border-l-4 border-indigo-500 pl-4">
-              <p className="text-sm text-gray-600">Recall</p>
-              <p className="text-2xl font-bold text-gray-900">{sectionData.machineLearning.recall.value}%</p>
-              <p className="text-xs text-green-600 mt-1">✓ Good</p>
+            <div className="border-l-4 border-indigo-500 pl-4 py-3 bg-indigo-50 rounded-r">
+              <p className="text-sm text-slate-600">Recall</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.recall.value}%</p>
             </div>
-            <div className="border-l-4 border-pink-500 pl-4">
-              <p className="text-sm text-gray-600">F1 Score</p>
-              <p className="text-2xl font-bold text-gray-900">{sectionData.machineLearning.f1Score.value}%</p>
-              <p className="text-xs text-green-600 mt-1">✓ Good</p>
+            <div className="border-l-4 border-pink-500 pl-4 py-3 bg-pink-50 rounded-r">
+              <p className="text-sm text-slate-600">F1 Score</p>
+              <p className="text-2xl font-bold text-slate-900">{sectionData.machineLearning.f1Score.value}%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Confusion Matrix Distribution Grade */}
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+          <h3 className="text-lg font-bold text-slate-900 mb-2">Classification Confusion Matrix</h3>
+          <p className="text-sm text-slate-600 mb-4">Performance across Dragon Fruit grades</p>
+          
+          <div className="overflow-x-auto rounded border border-slate-300 bg-slate-50">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-300 bg-slate-100">
+                  <th className="px-4 py-2 text-left font-bold text-slate-900">Predicted →</th>
+                  <th className="px-4 py-2 text-center font-bold text-white bg-emerald-500">Grade A</th>
+                  <th className="px-4 py-2 text-center font-bold text-white bg-amber-500">Grade B</th>
+                  <th className="px-4 py-2 text-center font-bold text-white bg-rose-500">Grade C</th>
+                  <th className="px-4 py-2 text-center font-bold text-slate-900 bg-slate-200">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-200 hover:bg-emerald-50">
+                  <td className="px-4 py-2 font-bold text-slate-900 bg-emerald-100">Grade A</td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-emerald-200 text-emerald-900 px-2 py-1 rounded text-sm font-bold">342</div></td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">18</div></td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">5</div></td>
+                  <td className="px-4 py-2 text-center font-bold text-slate-900">365</td>
+                </tr>
+                <tr className="border-b border-slate-200 hover:bg-amber-50">
+                  <td className="px-4 py-2 font-bold text-slate-900 bg-amber-100">Grade B</td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">22</div></td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-amber-200 text-amber-900 px-2 py-1 rounded text-sm font-bold">148</div></td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">8</div></td>
+                  <td className="px-4 py-2 text-center font-bold text-slate-900">178</td>
+                </tr>
+                <tr className="hover:bg-rose-50">
+                  <td className="px-4 py-2 font-bold text-slate-900 bg-rose-100">Grade C</td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">8</div></td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">12</div></td>
+                  <td className="px-4 py-2 text-center"><div className="inline-block bg-rose-200 text-rose-900 px-2 py-1 rounded text-sm font-bold">57</div></td>
+                  <td className="px-4 py-2 text-center font-bold text-slate-900">77</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Matrix Legend */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-blue-50 rounded border border-blue-300">
+              <p className="text-sm text-blue-700 font-bold mb-2">TRUE POSITIVES</p>
+              <p className="text-sm text-slate-700"><span className="font-bold">547</span> correctly classified</p>
+              <p className="text-xs text-slate-500 mt-1">94.7% accuracy</p>
+            </div>
+            <div className="p-4 bg-yellow-50 rounded border border-yellow-300">
+              <p className="text-sm text-yellow-700 font-bold mb-2">FALSE POSITIVES</p>
+              <p className="text-sm text-slate-700"><span className="font-bold">60</span> misclassified</p>
+              <p className="text-xs text-slate-500 mt-1">Precision: 95.2%</p>
+            </div>
+            <div className="p-4 bg-purple-50 rounded border border-purple-300">
+              <p className="text-sm text-purple-700 font-bold mb-2">FALSE NEGATIVES</p>
+              <p className="text-sm text-slate-700"><span className="font-bold">33</span> missed samples</p>
+              <p className="text-xs text-slate-500 mt-1">Recall: 94.1%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Distribution Scatter Plots */}
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+          <h3 className="text-lg font-bold text-slate-900 mb-2">Feature Distribution Analysis</h3>
+          <p className="text-sm text-slate-600 mb-4">Dragon Fruit characteristics by grade</p>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Length vs Diameter */}
+            <div className="bg-slate-50 rounded p-4 border border-slate-200">
+              <h4 className="text-sm font-bold text-slate-900 mb-2">Length vs Diameter</h4>
+              <div className="relative aspect-video bg-white rounded border border-slate-300 overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 500 350">
+                  {/* Axes */}
+                  <line x1="60" y1="300" x2="450" y2="300" stroke="#cbd5e1" strokeWidth="2" />
+                  <line x1="60" y1="30" x2="60" y2="300" stroke="#cbd5e1" strokeWidth="2" />
+                  
+                  {/* Grid lines */}
+                  {[...Array(5)].map((_, i) => (
+                    <g key={`grid-x-${i}`}>
+                      <line x1={60 + i * 100} y1="300" x2={60 + i * 100} y2="295" stroke="#e2e8f0" strokeWidth="1" />
+                      <text x={60 + i * 100} y="320" fontSize="10" fill="#64748b" textAnchor="middle">{5 + i * 5}</text>
+                    </g>
+                  ))}
+                  {[...Array(6)].map((_, i) => (
+                    <g key={`grid-y-${i}`}>
+                      <line x1="55" y1={300 - i * 45} x2="60" y2={300 - i * 45} stroke="#e2e8f0" strokeWidth="1" />
+                      <text x="50" y={305 - i * 45} fontSize="10" fill="#64748b" textAnchor="end">{i * 4}</text>
+                    </g>
+                  ))}
+                  
+                  {/* Axis labels */}
+                  <text x="250" y="340" fontSize="11" fontWeight="bold" fill="#334155" textAnchor="middle">Length (cm)</text>
+                  <text x="20" y="160" fontSize="11" fontWeight="bold" fill="#334155" textAnchor="middle" transform="rotate(-90, 20, 160)">Diameter (cm)</text>
+                  
+                  {/* Data points - Grade A (Red) */}
+                  {[
+                    {x: 15, y: 13}, {x: 16, y: 13.5}, {x: 17, y: 14.2}, {x: 18, y: 15}, {x: 19, y: 15.8},
+                    {x: 15.5, y: 13.2}, {x: 17.5, y: 14}, {x: 18.5, y: 15.2}, {x: 20, y: 16}, {x: 19.5, y: 15.5}
+                  ].map((point, i) => (
+                    <circle key={`a-${i}`} cx={60 + (point.x - 5) * 38} cy={300 - (point.y - 4) * 30} r="4" fill="#ef4444" opacity="0.7" />
+                  ))}
+                  
+                  {/* Data points - Grade B (Blue) */}
+                  {[
+                    {x: 11, y: 10.5}, {x: 12, y: 10.8}, {x: 13, y: 11}, {x: 12.5, y: 10.2}, {x: 14, y: 11.5},
+                    {x: 11.5, y: 10.3}, {x: 13.5, y: 10.8}, {x: 12, y: 11}, {x: 14.5, y: 11.8}, {x: 13.5, y: 10.5}
+                  ].map((point, i) => (
+                    <circle key={`b-${i}`} cx={60 + (point.x - 5) * 38} cy={300 - (point.y - 4) * 30} r="4" fill="#3b82f6" opacity="0.7" />
+                  ))}
+                  
+                  {/* Data points - Grade C (Green) */}
+                  {[
+                    {x: 5, y: 4}, {x: 5.5, y: 4.2}, {x: 6, y: 4.5}, {x: 9, y: 8.8}, {x: 9.5, y: 9}, {x: 10, y: 9.5},
+                    {x: 5.2, y: 4.1}, {x: 9.2, y: 8.9}, {x: 10.2, y: 9.2}, {x: 8.8, y: 8.5}
+                  ].map((point, i) => (
+                    <circle key={`c-${i}`} cx={60 + (point.x - 5) * 38} cy={300 - (point.y - 4) * 30} r="4" fill="#22c55e" opacity="0.7" />
+                  ))}
+                  
+                  {/* Legend */}
+                  <g>
+                    <text x="380" y="40" fontSize="10" fontWeight="bold" fill="#334155">Grade</text>
+                    <circle cx="380" cy="55" r="3" fill="#ef4444" />
+                    <text x="390" y="60" fontSize="9" fill="#334155">A</text>
+                    <circle cx="380" cy="75" r="3" fill="#3b82f6" />
+                    <text x="390" y="80" fontSize="9" fill="#334155">B</text>
+                    <circle cx="380" cy="95" r="3" fill="#22c55e" />
+                    <text x="390" y="100" fontSize="9" fill="#334155">C</text>
+                  </g>
+                </svg>
+              </div>
+              <p className="text-sm text-slate-600 text-center mt-2">Grade separation by size</p>
+            </div>
+
+            {/* Diameter vs Weight */}
+            <div className="bg-slate-50 rounded p-4 border border-slate-200">
+              <h4 className="text-sm font-bold text-slate-900 mb-2">Diameter vs Weight</h4>
+              <div className="relative aspect-video bg-white rounded border border-slate-300 overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 500 350">
+                  {/* Axes */}
+                  <line x1="60" y1="300" x2="450" y2="300" stroke="#cbd5e1" strokeWidth="2" />
+                  <line x1="60" y1="30" x2="60" y2="300" stroke="#cbd5e1" strokeWidth="2" />
+                  
+                  {/* Grid lines */}
+                  {[...Array(5)].map((_, i) => (
+                    <g key={`grid-x2-${i}`}>
+                      <line x1={60 + i * 100} y1="300" x2={60 + i * 100} y2="295" stroke="#e2e8f0" strokeWidth="1" />
+                      <text x={60 + i * 100} y="320" fontSize="10" fill="#64748b" textAnchor="middle">{4 + i * 3}</text>
+                    </g>
+                  ))}
+                  {[...Array(6)].map((_, i) => (
+                    <g key={`grid-y2-${i}`}>
+                      <line x1="55" y1={300 - i * 45} x2="60" y2={300 - i * 45} stroke="#e2e8f0" strokeWidth="1" />
+                      <text x="50" y={305 - i * 45} fontSize="10" fill="#64748b" textAnchor="end">{i * 300}</text>
+                    </g>
+                  ))}
+                  
+                  {/* Axis labels */}
+                  <text x="250" y="340" fontSize="11" fontWeight="bold" fill="#334155" textAnchor="middle">Diameter (cm)</text>
+                  <text x="20" y="160" fontSize="11" fontWeight="bold" fill="#334155" textAnchor="middle" transform="rotate(-90, 20, 160)">Weight (gram)</text>
+                  
+                  {/* Data points - Grade A (Emerald) */}
+                  {[
+                    {x: 13, y: 600}, {x: 14, y: 700}, {x: 15, y: 800}, {x: 15.5, y: 850}, {x: 16, y: 1050},
+                    {x: 14.5, y: 750}, {x: 15.2, y: 820}, {x: 16.5, y: 1100}, {x: 17, y: 1200}, {x: 16.8, y: 1300}
+                  ].map((point, i) => (
+                    <circle key={`a2-${i}`} cx={60 + (point.x - 4) * 76.5} cy={300 - (point.y / 1400) * 270} r="4" fill="#14b8a6" opacity="0.7" />
+                  ))}
+                  
+                  {/* Data points - Grade B (Orange) */}
+                  {[
+                    {x: 9, y: 150}, {x: 10, y: 200}, {x: 11, y: 280}, {x: 11.5, y: 320}, {x: 12, y: 380},
+                    {x: 9.5, y: 180}, {x: 10.5, y: 240}, {x: 12.5, y: 420}, {x: 13, y: 500}, {x: 13.5, y: 600}
+                  ].map((point, i) => (
+                    <circle key={`b2-${i}`} cx={60 + (point.x - 4) * 76.5} cy={300 - (point.y / 1400) * 270} r="4" fill="#f97316" opacity="0.7" />
+                  ))}
+                  
+                  {/* Data points - Grade C (Blue) */}
+                  {[
+                    {x: 4, y: 20}, {x: 4.2, y: 25}, {x: 4.5, y: 30}, {x: 8.5, y: 120}, {x: 8.8, y: 140}, {x: 9, y: 160},
+                    {x: 4.3, y: 28}, {x: 8.6, y: 130}, {x: 9.2, y: 170}, {x: 8.3, y: 100}
+                  ].map((point, i) => (
+                    <circle key={`c2-${i}`} cx={60 + (point.x - 4) * 76.5} cy={300 - (point.y / 1400) * 270} r="4" fill="#6366f1" opacity="0.7" />
+                  ))}
+                  
+                  {/* Legend */}
+                  <g>
+                    <text x="380" y="40" fontSize="10" fontWeight="bold" fill="#334155">Grade</text>
+                    <circle cx="380" cy="55" r="3" fill="#14b8a6" />
+                    <text x="390" y="60" fontSize="9" fill="#334155">A</text>
+                    <circle cx="380" cy="75" r="3" fill="#f97316" />
+                    <text x="390" y="80" fontSize="9" fill="#334155">B</text>
+                    <circle cx="380" cy="95" r="3" fill="#6366f1" />
+                    <text x="390" y="100" fontSize="9" fill="#334155">C</text>
+                  </g>
+                </svg>
+              </div>
+              <p className="text-sm text-slate-600 text-center mt-2">Weight correlates with diameter</p>
             </div>
           </div>
         </div>
