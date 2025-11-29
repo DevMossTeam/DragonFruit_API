@@ -317,7 +317,7 @@ export default function DashboardPage() {
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b-2 border-slate-300 bg-linear-to-r from-slate-100 via-blue-50 to-cyan-50">
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Tanggal</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Timestamp</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Berat (g)</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Length (cm)</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-800 uppercase tracking-widest">Diameter (cm)</th>
