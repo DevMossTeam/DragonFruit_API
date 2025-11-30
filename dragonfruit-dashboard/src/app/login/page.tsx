@@ -24,17 +24,26 @@ export default function Login() {
 
     try {
       // Use your API helper
-      const data = await fetchFromAPI<{ user: { uid: string; username: string; email: string } }>(
+      const data = await fetchFromAPI<{ 
+        session_id: string;
+        user: { uid: string; username: string; email: string } 
+      }>(
         '/api/auth/login',
         {
           method: 'POST',
-          credentials: 'include', // ← Still needed for cookies!
+          credentials: 'include',
           body: JSON.stringify({
             username_or_email: formData.email,
             password: formData.password
           }),
         }
       );
+
+      // Store session_id in localStorage as backup
+      if (data.session_id) {
+        localStorage.setItem('session_id', data.session_id);
+        console.log('✅ Session ID stored in localStorage');
+      }
 
       // Success: redirect to dashboard
       router.push('/dashboard');

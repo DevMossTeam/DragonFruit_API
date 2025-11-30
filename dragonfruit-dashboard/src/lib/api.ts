@@ -6,14 +6,25 @@ export async function fetchFromAPI<T>(
   options?: RequestInit
 ): Promise<T> {
   try {
-    console.log(`📡 Fetching: ${API_BASE_URL}${endpoint}`, { method: options?.method, headers: options?.headers });
+    console.log(`📡 Fetching: ${API_BASE_URL}${endpoint}`, { method: options?.method, credentials: options?.credentials });
     
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options?.headers as Record<string, string>,
+    };
+
+    // Fallback: Add session_id from localStorage if available (backup for cookies)
+    const sessionId = typeof window !== 'undefined' ? localStorage.getItem('session_id') : null;
+    if (sessionId && !headers['Authorization']) {
+      headers['X-Session-ID'] = sessionId;
+      console.log('📍 Using session_id from localStorage as fallback');
+    }
+
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      // IMPORTANT: Always include credentials to send/receive cookies
+      credentials: options?.credentials || 'include',
+      headers,
     });
 
     if (!res.ok) {

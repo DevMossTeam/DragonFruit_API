@@ -44,7 +44,8 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://127.0.0.1:8000/api/gradingresult/all');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiUrl}/api/gradingresult/all`);
         
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);

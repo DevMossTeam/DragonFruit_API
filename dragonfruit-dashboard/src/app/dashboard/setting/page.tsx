@@ -26,7 +26,8 @@ export default function SettingsPage() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/update-username", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/auth/update-username`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +77,8 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/update-password", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/auth/update-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
