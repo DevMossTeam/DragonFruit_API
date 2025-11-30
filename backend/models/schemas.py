@@ -1,9 +1,9 @@
 # models/schemas.py
 
-from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from typing import Optional
+from datetime import datetime
 
 
 # ----------------------------
@@ -11,6 +11,7 @@ from typing import Optional
 # ----------------------------
 class GradingResultCreate(BaseModel):
     filename: str
+    source: Optional[str] = None
 
     # PCV features
     length_cm: Optional[float] = None
@@ -18,7 +19,7 @@ class GradingResultCreate(BaseModel):
     weight_est_g: Optional[float] = None
     ratio: Optional[float] = None
 
-    # berat aktual (optional)
+    # Berat aktual
     weight_actual_g: Optional[float] = None
 
     # Fuzzy result
@@ -27,14 +28,18 @@ class GradingResultCreate(BaseModel):
     # Grading
     grade_by_weight: Optional[str] = None
     final_grade: Optional[str] = None
-    tanggal: datetime 
+
+    class Config:
+        from_attributes = True  # Pydantic V2
 
 
 # ----------------------------
 # RESPONSE (kembalian dari DB)
 # ----------------------------
 class GradingResultResponse(GradingResultCreate):
-    id: UUID
+    id: UUID = Field(...)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Pydantic V2

@@ -1,9 +1,9 @@
-# services/grading_service.py
+# grading_service.py
+
 import logging
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
-import cv2
 from sqlalchemy.orm import Session
 
 from models.grading_model import GradingResult
@@ -18,23 +18,20 @@ from services.pcv.normalization import normalize_pct, normalize_fixed
 from services.fuzzy.mamdani import compute_fuzzy_score, grade_from_weight
 
 # MQTT publisher
-from services.mqtt_service import mqtt_publish
+from services.mqtt_service import publish
 
 logger = logging.getLogger(__name__)
 
-
-# -------------------------------------------------------------------
-# Normalisasi nilai aman (internal only)
-# -------------------------------------------------------------------
-def _safe_normalize(value: float, reference_series, lo: Optional[float] = None, hi: Optional[float] = None) -> float:
+# ============================================================
+# SAFE NORMALIZATION
+# ============================================================
+def _safe_normalize(value: float, series, lo: Optional[float] = None, hi: Optional[float] = None) -> float:
     """
-    Normalize value to [0,1].
-    - If reference_series provided → percentile normalization.
-    - Else fallback to fixed-range normalization.
+    Percentile → fallback to fixed normalization.
     """
     try:
-        if reference_series is not None:
-            return normalize_pct(value, reference_series)
+        if series is not None:
+            return normalize_pct(value, series)
     except Exception:
         logger.debug("Percentile normalization failed → fallback.")
 
@@ -44,27 +41,27 @@ def _safe_normalize(value: float, reference_series, lo: Optional[float] = None, 
     return 0.0
 
 
-# -------------------------------------------------------------------
-# Payload JSON hasil grading
-# -------------------------------------------------------------------
+# ============================================================
+# BUILD JSON RESULT PAYLOAD
+# ============================================================
 def _build_result_payload(db_record: GradingResult) -> Dict[str, Any]:
-    """Create JSON-serializable result payload from DB model."""
     return {
-        "id": db_record.id,
+        "id": str(db_record.id),
         "filename": db_record.filename,
         "length_cm": db_record.length_cm,
         "diameter_cm": db_record.diameter_cm,
         "weight_est_g": db_record.weight_est_g,
         "weight_actual_g": db_record.weight_actual_g,
         "ratio": db_record.ratio,
-        "fuzzy_score": float(db_record.fuzzy_score) if db_record.fuzzy_score is not None else None,
+        "fuzzy_score": float(db_record.fuzzy_score) if db_record.fuzzy_score else None,
         "grade_by_weight": db_record.grade_by_weight,
         "final_grade": db_record.final_grade,
     }
 
-# -------------------------------------------------------------------
-# Wrapper untuk kompatibilitas lama
-# -------------------------------------------------------------------
+
+# ============================================================
+# KOMPATIBILITAS LAMA
+# ============================================================
 def process_grading(
     image_bgr,
     reference_df,
@@ -74,10 +71,7 @@ def process_grading(
     fuzzy_fallback_on_invalid_weight=True,
     weight_actual_g=None
 ):
-    """
-    Wrapper agar kode lama yang memanggil 'process_grading'
-    tetap bekerja dengan fungsi baru 'process_image'.
-    """
+    """Wrapper kompatibel versi lama."""
     return process_image(
         image_bgr=image_bgr,
         reference_df=reference_df,
@@ -88,9 +82,35 @@ def process_grading(
         weight_actual_g=weight_actual_g
     )
 
-# -------------------------------------------------------------------
-# PROSES UTAMA: Grading
-# -------------------------------------------------------------------
+
+# ============================================================
+# FUNGSI YANG DICARI OLEH camera_controller.py
+# ============================================================
+def run_fuzzy_and_save(
+    image_bgr: np.ndarray,
+    filename: str,
+    db: Session,
+    reference_df=None,
+    weight_actual_g=None,
+    publish_mqtt=True
+):
+    """
+    Dipanggil oleh camera_controller.py untuk menjalankan PCV + fuzzy dan menyimpan hasil.
+    """
+    result, err = process_image(
+        image_bgr=image_bgr,
+        reference_df=reference_df,
+        filename=filename,
+        db=db,
+        publish_mqtt=publish_mqtt,
+        weight_actual_g=weight_actual_g
+    )
+    return result, err
+
+
+# ============================================================
+# MAIN PROCESS: PCV → FUZZY → DB → MQTT
+# ============================================================
 def process_image(
     image_bgr: np.ndarray,
     reference_df,
@@ -100,93 +120,73 @@ def process_image(
     fuzzy_fallback_on_invalid_weight: bool = True,
     weight_actual_g: Optional[float] = None
 ) -> Tuple[Dict[str, Any], Optional[str]]:
-    """
-    Process a single image: PCV → feature extraction → normalization → fuzzy → grade → DB → MQTT.
 
-    Args:
-      - image_bgr: BGR image array
-      - reference_df: pandas DataFrame with reference columns for percentile normalization
-      - filename: original filename
-      - db: SQLAlchemy Session
-      - publish_mqtt: whether to publish result to MQTT
-      - fuzzy_fallback_on_invalid_weight: if True and no valid weight -> use fuzzy thresholds
-      - weight_actual_g: optional weight read from loadcell (grams). If provided, used as primary for grade_by_weight.
-
-    Returns:
-      (result_dict, error_message). error_message=None on success.
-    """
-
-    # 1. Preprocess to HSV
+    # --- 1. Preprocess image ---
     hsv = preprocess_image(image_bgr)
 
-    # 2. Segment to obtain fruit mask
+    # --- 2. Segment image ---
     segmented, mask = segment_image(hsv)
 
-    # 3. Extract visual features
-    # extract_features returns (length_cm, diameter_cm, weight_est_g, ratio)
+    # --- 3. Extract features ---
     length_cm, diameter_cm, weight_est_g, ratio = extract_features(segmented, mask)
 
-    # 4. Normalization (only for fuzzy computation, not stored)
-    length_norm = _safe_normalize(
-        length_cm,
-        reference_df.get("length_cm") if hasattr(reference_df, "get") else None,
-        lo=5.0, hi=18.0
-    )
-    diameter_norm = _safe_normalize(
-        diameter_cm,
-        reference_df.get("diameter_cm") if hasattr(reference_df, "get") else None,
-        lo=3.0, hi=12.0
-    )
-    weight_norm = _safe_normalize(
-        weight_est_g,
-        reference_df.get("weight_est_g") if hasattr(reference_df, "get") else None,
-        lo=150.0, hi=650.0
-    )
+    # --- 4. Normalization ---
+    # Pilih kolom dari dataframe referensi dengan aman
+    def col(series_name):
+        if reference_df is None:
+            return None
+        if hasattr(reference_df, "get"):
+            return reference_df.get(series_name)
+        if hasattr(reference_df, "columns") and series_name in reference_df.columns:
+            return reference_df[series_name]
+        return None
 
-    # ratio reference
-    ratio_series = None
+    length_norm = _safe_normalize(length_cm, col("length_cm"), lo=5.0, hi=18.0)
+    diameter_norm = _safe_normalize(diameter_cm, col("diameter_cm"), lo=3.0, hi=12.0)
+    weight_norm = _safe_normalize(weight_est_g, col("weight_est_g"), lo=150.0, hi=650.0)
+
+    # ratio series
     try:
-        if hasattr(reference_df, "get") and ("ratio" in reference_df.columns):
-            ratio_series = reference_df["ratio"]
-        elif hasattr(reference_df, "get") and ("length_cm" in reference_df.columns and "diameter_cm" in reference_df.columns):
-            ratio_series = reference_df["length_cm"] / (reference_df["diameter_cm"] + 1e-9)
+        if reference_df is not None and hasattr(reference_df, "columns"):
+            if "ratio" in reference_df.columns:
+                ratio_series = reference_df["ratio"]
+            else:
+                ratio_series = reference_df["length_cm"] / (reference_df["diameter_cm"] + 1e-9)
+        else:
+            ratio_series = None
     except Exception:
         ratio_series = None
 
     ratio_norm = _safe_normalize(ratio, ratio_series, lo=1.0, hi=1.8)
 
-    # 5. Fuzzy score (computed from normalized inputs)
+    # --- 5. Fuzzy computation ---
     try:
         fuzzy_score = compute_fuzzy_score(length_norm, diameter_norm, weight_norm, ratio_norm)
     except Exception:
         logger.exception("Fuzzy computation failed.")
         fuzzy_score = 0.0
 
-    # 6. Determine weight-based grade:
-    # Prefer actual weight from sensor if provided; fallback to estimated weight.
-    primary_weight_for_grade = None
-    if weight_actual_g is not None:
-        try:
-            primary_weight_for_grade = float(weight_actual_g)
-        except Exception:
-            primary_weight_for_grade = None
+    # --- 6. Grade by real weight or fuzzy ---
+    primary_weight = None
+    try:
+        primary_weight = float(weight_actual_g) if weight_actual_g else weight_est_g
+    except Exception:
+        primary_weight = weight_est_g
 
-    if primary_weight_for_grade is None:
-        primary_weight_for_grade = weight_est_g
+    grade_by_weight = grade_from_weight(primary_weight)
 
-    grade_by_weight = grade_from_weight(primary_weight_for_grade)
-
-    # optional fallback: if primary weight invalid use fuzzy_score thresholds
+    # fallback fuzzy
     final_grade = grade_by_weight
-    if (primary_weight_for_grade is None or primary_weight_for_grade <= 0) and fuzzy_fallback_on_invalid_weight:
+    if (weight_actual_g is None or weight_actual_g <= 0) and fuzzy_fallback_on_invalid_weight:
         if fuzzy_score >= 70:
             final_grade = "A"
         elif fuzzy_score >= 45:
             final_grade = "B"
+            # else → "C"
         else:
             final_grade = "C"
 
-    # 7. Persist to DB
+    # --- 7. Save to database ---
     try:
         db_record = GradingResult(
             filename=filename,
@@ -214,12 +214,11 @@ def process_image(
 
     result_payload = _build_result_payload(db_record)
 
-    # 8. MQTT publish (best effort)
+    # --- 8. Publish MQTT ---
     if publish_mqtt:
         try:
-            mqtt_publish("grading/result", result_payload)
+            publish("grading/result", result_payload)
         except Exception:
             logger.exception("MQTT publish failed (non-fatal).")
 
-    # 9. Return success
     return result_payload, None

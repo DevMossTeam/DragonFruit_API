@@ -1,33 +1,40 @@
 # backend/main.py
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from pydantic import BaseModel
+from typing import Literal
 
-from core.database import engine
+from core.database import engine, get_db
 from core.mqtt import init_mqtt, publish_grade, get_mqtt_grade, get_mqtt_weight, GRADE_TOPIC
 
 # Auth & User
 from auth.session import get_session
 from controllers.UserController import get_user_by_uid
 
+# Services
+from services.pcv.pipeline import process_image_bytes
+from services.fuzzy.mamdani import compute_fuzzy_score
+from services.mqtt_service import publish_command
+from services.pcv.normalization import normalize_fixed
+
 # Routers
 from routes.grading_routes import router as grading_router
 from routes.device_routes import router as device_router
+from routes.camera_routes import router as camera_router
 from auth.api_login import router as api_auth_router
 from routes.metrics_routes import router as metrics_router
+from routes.user import router as user_router
+from controllers.GradingresultController import router as gradingresult_router
 
-# Request model
-from pydantic import BaseModel
-from controllers.GradingresultController import router as gradingresult_router 
-
+# Request models
 class GradeRequest(BaseModel):
-    grade: str
+    grade: Literal["A", "B", "C"]
 
 
 app = FastAPI(title="Dragon Fruit Grading API")
-app.include_router(gradingresult_router, prefix="/api/gradingresult", tags=["Grading Results"])
-app.include_router(metrics_router, prefix="/api", tags=["Metrics"])
+
 # ==========================
 # CORS - MUST BE FIRST!
 # ==========================
@@ -40,7 +47,7 @@ app.add_middleware(
         "http://127.0.0.1:8000",
     ],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods including OPTIONS
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=3600,
@@ -67,43 +74,99 @@ async def set_grade(req: GradeRequest):
         "grade": req.grade
     }
 
-# @app.post("/test-send-grade")
-# async def test_send_grade():
-#     if mqttGrade is None:
-#         return {"error": "No grade available. Please use /set-grade first."}
-#     publish_grade(mqttGrade)
-#     return {
-#         "message": f"Current grade '{mqttGrade}' republished to {GRADE_TOPIC}",
-#         "grade": mqttGrade
-    # }
+@app.get("/current-grade")
+async def current_grade():
+    current_grade = get_mqtt_grade()
+    if current_grade is None:
+        raise HTTPException(status_code=400, detail="No grade set. Please use /set-grade to set a grade.")
+    return {"current_grade": current_grade}
 
 @app.get("/current-weight")
 async def current_weight():
     return {"current_weight": get_mqtt_weight()}
- 
+
 @app.post("/test-send-grade")
 async def test_send_grade():
     current_grade = get_mqtt_grade()
     if current_grade is None:
-        return {"error": "No grade available. Please use /set-grade first."}
+        raise HTTPException(status_code=400, detail="No grade available. Please use /set-grade first.")
     publish_grade(current_grade)
     return {
         "message": f"Current grade '{current_grade}' republished to {GRADE_TOPIC}",
         "grade": current_grade
     }
 
-@app.get("/current-grade")
-async def current_grade():
-    return {"current_grade": get_mqtt_grade()}
+# ==========================
+# Endpoint Upload Gambar
+# ==========================
+@app.post("/upload-image/")
+async def upload_image(file: UploadFile = File(...)):
+    """Process uploaded image with AI/PCV pipeline and fuzzy logic"""
+    # Baca file gambar yang diupload
+    img_bytes = await file.read()
+
+    # Proses gambar menggunakan pipeline AI/PCV
+    try:
+        result = process_image_bytes(img_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Proses gambar gagal: {str(e)}")
+
+    # Ambil fitur dari hasil pemrosesan
+    length_cm = result['length_cm']
+    diameter_cm = result['diameter_cm']
+    weight_est_g = result['weight_est_g']
+    ratio = result['ratio']
+
+    # Normalisasi fitur untuk fuzzy logic
+    length_n = normalize_fixed(length_cm, 0, 100)
+    diameter_n = normalize_fixed(diameter_cm, 0, 50)
+    weight_n = normalize_fixed(weight_est_g, 0, 1000)
+    ratio_n = normalize_fixed(ratio, 0, 2)
+
+    # Hitung skor fuzzy
+    fuzzy_score = compute_fuzzy_score(length_n, diameter_n, weight_n, ratio_n)
+
+    # Tentukan grade berdasarkan berat
+    grade = grade_from_weight(weight_est_g)
+
+    # Kirim grade dan perintah ke IoT via MQTT
+    command = {
+        "grade": grade,
+        "weight": weight_est_g,
+        "score": fuzzy_score
+    }
+    publish_command(command)
+
+    return {
+        "message": "Gambar berhasil diproses",
+        "result": {
+            "length_cm": length_cm,
+            "diameter_cm": diameter_cm,
+            "weight_est_g": weight_est_g,
+            "ratio": ratio,
+            "fuzzy_score": fuzzy_score,
+            "grade": grade
+        }
+    }
+
+# ==========================
+# HELPER FUNCTIONS
+# ==========================
+def grade_from_weight(weight_g: float) -> str:
+    """Determine grade based on weight (in grams)"""
+    if weight_g >= 350:
+        return "A"
+    elif weight_g >= 200:
+        return "B"
+    else:
+        return "C"
 
 
 # ==========================
 # ROUTERS
 # ==========================
-from routes.grading_routes import router as grading_router
-from routes.camera_routes import router as camera_router
-from routes.user import router as user_router
-
+app.include_router(gradingresult_router, prefix="/api/gradingresult", tags=["Grading Results"])
+app.include_router(metrics_router, prefix="/api", tags=["Metrics"])
 app.include_router(grading_router, prefix="/grading", tags=["Grading"])
 app.include_router(camera_router, prefix="/camera", tags=["Camera"])
 app.include_router(device_router, prefix="/device", tags=["Device / IoT"])
@@ -115,16 +178,14 @@ app.include_router(user_router, prefix="/users", tags=["Users"])
 # ==========================
 @app.get("/")
 async def root():
-    return {"message": "Dragon Fruit Grading API is running"}
-
+    return {"message": "Dragon Fruit Grading API is running", "version": "1.0.0"}
 
 @app.get("/health")
 async def health():
     try:
         with engine.connect() as conn:
             version = conn.execute(text("SELECT version();")).fetchone()[0]
-        return {"status": "ok", "database": f"SQLite {version}"}
-
+        return {"status": "ok", "database": f"PostgreSQL {version}"}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 

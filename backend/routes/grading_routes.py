@@ -1,11 +1,8 @@
-# routes/grading_routes.py
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 import numpy as np
 import cv2
-import pandas as pd
 from sqlalchemy.orm import Session
-import os
 import logging
 
 from core.database import get_db
@@ -14,45 +11,6 @@ from models.schemas import GradingResultResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-# ============================================================
-# PATH CSV HARUS SAMA DENGAN DATASET FINAL
-# ============================================================
-CSV_PATH = r"E:\DragonEye\dataset\graded_features.csv"
-
-# Load CSV saat startup modul
-reference_df = None
-try:
-    if not os.path.exists(CSV_PATH):
-        # Try alternative paths if Windows path doesn't exist
-        alt_paths = [
-            os.path.join(os.path.dirname(__file__), "..", "dataset", "graded_features.csv"),
-            os.path.expanduser("~/dataset/graded_features.csv"),
-        ]
-        
-        found = False
-        for alt_path in alt_paths:
-            if os.path.exists(alt_path):
-                CSV_PATH = alt_path
-                found = True
-                break
-        
-        if not found:
-            logger.warning(f"Dataset CSV tidak ditemukan di: {CSV_PATH}")
-            reference_df = None
-        else:
-            reference_df = pd.read_csv(CSV_PATH)
-            reference_df.columns = reference_df.columns.str.strip()
-            logger.info(f"Reference CSV loaded successfully: {CSV_PATH} ({len(reference_df)} rows)")
-    else:
-        reference_df = pd.read_csv(CSV_PATH)
-        reference_df.columns = reference_df.columns.str.strip()
-        logger.info(f"Reference CSV loaded successfully: {CSV_PATH} ({len(reference_df)} rows)")
-
-except Exception as e:
-    logger.exception("Gagal memuat reference CSV saat startup.")
-    reference_df = None
-
 
 # =====================================================================
 # ENDPOINT: /grade-image
@@ -63,68 +21,50 @@ async def grade_image(
     db: Session = Depends(get_db)
 ):
     """
-    Menerima upload gambar, menjalankan proses grading (PCV + normalisasi +
-    fuzzy + DB insert + MQTT publish), dan mengembalikan hasil grading.
+    Menerima upload gambar → menjalankan PCV → fuzzy → simpan DB → MQTT publish.
+    Semua dilakukan di process_image(). Endpoint hanya menerima & mengembalikan hasil.
     """
 
-    # 1. Cek reference CSV
-    if reference_df is None:
-        logger.error("Reference dataset tidak tersedia.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Reference dataset not loaded on server. Contact admin."
-        )
+    # 1) Validasi input file
+    filename = file.filename
+    img_bytes = await file.read()
 
-    # 2. Decode gambar
-    try:
-        img_bytes = await file.read()
-
-        if not img_bytes:
-            raise ValueError("File upload kosong.")
-
-        img_arr = np.frombuffer(img_bytes, np.uint8)
-        img_np = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-
-        if img_np is None:
-            raise ValueError("File bukan gambar valid atau format tidak didukung.")
-
-    except ValueError as ve:
-        logger.warning(f"Upload error: {ve}")
+    if not img_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(ve)
-        )
-    except Exception:
-        logger.exception("Error saat membaca file upload.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to read uploaded image."
+            detail="File upload kosong."
         )
 
-    # 3. Proses grading
+    img_arr = np.frombuffer(img_bytes, np.uint8)
+    img_np = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+
+    if img_np is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File bukan gambar valid atau format tidak didukung."
+        )
+
+    # 2) Proses grading (sudah termasuk simpan DB + publish MQTT)
     try:
         result, err_msg = process_image(
             image_bgr=img_np,
-            reference_df=reference_df,
-            filename=file.filename,
+            reference_df=None,
+            filename=filename,
             db=db,
-            publish_mqtt=True,                 # MQTT aktif
+            publish_mqtt=True,
             fuzzy_fallback_on_invalid_weight=True
         )
-    except Exception:
-        logger.exception("Error tak terduga saat proses grading.")
+    except Exception as e:
+        logger.exception(f"Error saat proses grading: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal processing error."
+            detail="Processing error."
         )
 
-    # 4. Jika ada error di processing
     if err_msg:
-        logger.error(f"Processing failed: {err_msg}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=err_msg
         )
 
-    # 5. Return result (divalidasi oleh Pydantic)
     return result
