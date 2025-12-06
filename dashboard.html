@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DragonEye Dashboard</title>
+    <link rel="stylesheet" href="static/css/dashboard.css">
+</head>
+<body>
+
+<section class="top">
+    <div class="camera-panel">
+        <div class="camera-box" id="cameraBox">
+            <!-- VIDEO STREAM DARI PYTHON -->
+            <img id="camera" src="http://10.204.14.89:5000/video_feed" alt="Stream">
+        </div>
+        <button id="captureBtn" class="btn">Capture</button>
+    </div>
+
+    <div class="gauge-panel">
+        <div class="gauge-box" id="gaugeBox">
+            <svg id="gaugeSVG">
+                <circle id="gBg"></circle>
+                <circle id="gFill"></circle>
+            </svg>
+            <div class="gValue" id="gValue">-</div>
+        </div>
+    </div>
+</section>
+
+<section class="log-section">
+    <h3>Prediction Log</h3>
+    <div class="log-wrapper">
+        <table id="logTable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Grade</th>
+                    <th>Length</th>
+                    <th>Diameter</th>
+                    <th>Est.Weight</th>
+                    <th>Actual</th>
+                </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ========================= -->
+<!-- 🔥 Firebase (MODULE MODE) -->
+<!-- ========================= -->
+<script type="module" src="static/js/firebase-config.js"></script>
+
+<!-- ========================= -->
+<!-- 🔧 MQTT WEBSOCKET CLIENT -->
+<!-- ========================= -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<!-- ========================= -->
+<!-- 📌 MAIN APP LOGIC -->
+<!-- ========================= -->
+<script type="module" src="static/js/app.js"></script>
+
+</body>
+</html>

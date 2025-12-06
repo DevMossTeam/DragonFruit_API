@@ -1,0 +1,89 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f6fa;
+    color: #222;
+}
+
+/* LOGIN PAGE */
+.login-body {
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-card {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    width: 320px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.08);
+}
+
+.login-card h1 {
+    margin-bottom: 10px;
+    color: #111;
+}
+
+.btn-github {
+    background: #24292f;
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+}
+.btn-github img {
+    width: 20px;
+}
+
+/* DASHBOARD */
+.navbar {
+    background: #ffffff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+}
+
+.btn-logout {
+    background: #d33;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    flex: 1;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.btn-primary {
+    background: #238636;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
