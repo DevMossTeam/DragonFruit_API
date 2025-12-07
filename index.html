@@ -1,25 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DragonEye Login</title>
-    <link rel="stylesheet" href="static/css/style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sortir Buah Naga – Login</title>
+  <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body class="login-body">
 
-    <div class="login-card">
-        <h1>DragonEye</h1>
-        <p>Smart Fruit Grading System</p>
-
-        <button id="loginGitHub" class="btn-github">
-            <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub logo">
-            Login with GitHub
-        </button>
+  <!-- ===== BACKGROUND PAN (two full-viewport slides) ===== -->
+  <div class="bg-pan" aria-hidden="true">
+    <div class="bg-slide">
+      <div class="bg-item" style="background-image: url('assets/background.png')"></div>
+      <div class="bg-item" style="background-image: url('assets/background.png')"></div>
     </div>
+    <div class="bg-dim"></div>
+  </div>
 
-    <!-- FIX INI -->
-    <script type="module" src="static/js/firebase-config.js"></script>
-    <script type="module" src="static/js/auth.js"></script>
+  <!-- ===== LOGIN CARD ===== -->
+  <div class="login-card">
+    <img src="assets/ic-dragonfruit.png" alt="Dragonfruit Logo" class="logo">
+    <h1 class="app-title">Sortir Buah Naga</h1>
+    <p class="login-text">Silakan masuk untuk melanjutkan ke sistem grading.</p>
+    <button id="loginGitHub" class="btn-github">
+      <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/github.svg" alt="GitHub">
+      Masuk dengan GitHub
+    </button>
+  </div>
+
+  <script type="module" src="static/js/firebase-config.js"></script>
+  <script type="module" src="static/js/auth.js"></script>
 </body>
 </html>
